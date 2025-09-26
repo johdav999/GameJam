@@ -10,9 +10,12 @@
 #include "EnhancedInputComponent.h"
 #include "InputAction.h"
 #include "Engine/World.h"
+#include "Gameplay/PaintZone.h"
+#include "GameFramework/PlayerController.h"
 #include "SideScrollingInteractable.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "TimerManager.h"
+#include "Math/RotationMatrix.h"
 
 ASideScrollingCharacter::ASideScrollingCharacter()
 {
@@ -213,6 +216,68 @@ void ASideScrollingCharacter::DoInteract()
 			Interactable->Interaction(this);
 		}
 	}
+
+void ASideScrollingCharacter::ShootPaint(EForceType ForceType, bool bMakePermanent)
+{
+        if (!PaintZoneClass)
+        {
+                return;
+        }
+
+        UWorld* World = GetWorld();
+        if (!World)
+        {
+                return;
+        }
+
+        FVector TraceStart = GetActorLocation();
+        FVector TraceDirection = GetActorForwardVector();
+
+        if (APlayerController* PC = Cast<APlayerController>(GetController()))
+        {
+                FVector CameraLocation;
+                FRotator CameraRotation;
+                PC->GetPlayerViewPoint(CameraLocation, CameraRotation);
+                TraceStart = CameraLocation;
+                TraceDirection = CameraRotation.Vector();
+        }
+        else if (Camera)
+        {
+                TraceStart = Camera->GetComponentLocation();
+                TraceDirection = Camera->GetForwardVector();
+        }
+
+        const FVector TraceEnd = TraceStart + TraceDirection * PaintRange;
+
+        FCollisionQueryParams TraceParams(SCENE_QUERY_STAT(PaintTrace), false, this);
+        TraceParams.bTraceComplex = true;
+
+        FHitResult Hit;
+        if (!World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, TraceParams))
+        {
+                return;
+        }
+
+        if (!Hit.bBlockingHit)
+        {
+                return;
+        }
+
+        const FVector SpawnLocation = Hit.Location + Hit.Normal * PaintSurfaceOffset;
+        const FRotationMatrix RotationMatrix = FRotationMatrix::MakeFromZ(Hit.Normal);
+        const FTransform SpawnTransform(RotationMatrix.Rotator(), SpawnLocation);
+
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.Owner = this;
+        SpawnParams.Instigator = this;
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+        APaintZone* PaintZone = World->SpawnActor<APaintZone>(PaintZoneClass, SpawnTransform, SpawnParams);
+        if (PaintZone)
+        {
+                PaintZone->InitializePaintZone(ForceType, Hit.Normal, bMakePermanent);
+        }
+}
 }
 
 void ASideScrollingCharacter::MultiJump()
