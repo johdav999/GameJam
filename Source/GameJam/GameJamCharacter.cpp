@@ -98,7 +98,7 @@ void AGameJamCharacter::Look(const FInputActionValue& Value)
 
 void AGameJamCharacter::DoMove(float Right, float Forward)
 {
-        UE_UNUSED(Forward);
+
 
         if (GetController() != nullptr)
         {
@@ -110,8 +110,7 @@ void AGameJamCharacter::DoMove(float Right, float Forward)
 
 void AGameJamCharacter::DoLook(float Yaw, float Pitch)
 {
-        UE_UNUSED(Yaw);
-        UE_UNUSED(Pitch);
+
 }
 
 void AGameJamCharacter::DoJumpStart()
