@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/SceneComponent.h"
+#include "Engine/EngineTypes.h"
 #include "PaintZone.generated.h"
 
 class UBoxComponent;
@@ -27,6 +28,9 @@ public:
 
     /** Configures the paint zone after it has been spawned. */
     void InitializePaintZone(EForceType InForceType, const FVector& InSurfaceNormal, bool bInPermanent);
+
+    /** Initializes the zone based on a trace hit. */
+    void InitializeFromHit(const FHitResult& Hit, EForceType ForceType);
 
     /** Returns true if this zone is permanent. */
     bool IsPermanent() const { return bPermanent; }

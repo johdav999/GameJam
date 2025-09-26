@@ -58,6 +58,15 @@ void APaintZone::InitializePaintZone(EForceType InForceType, const FVector& InSu
     UpdateVisuals();
 }
 
+void APaintZone::InitializeFromHit(const FHitResult& Hit, EForceType ForceType)
+{
+    SurfaceNormal = Hit.Normal;
+    this->ForceType = ForceType;
+    SetActorLocation(Hit.Location);
+    SetActorRotation(FRotationMatrix::MakeFromZ(Hit.Normal).Rotator());
+    UpdateVisuals();
+}
+
 void APaintZone::BeginPlay()
 {
     Super::BeginPlay();

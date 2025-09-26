@@ -10,6 +10,9 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Engine/EngineTypes.h"
+#include "Engine/World.h"
+#include "Gameplay/PaintZone.h"
 #include "GameJam.h"
 
 AGameJamCharacter::AGameJamCharacter()
@@ -61,21 +64,27 @@ void AGameJamCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
 		
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+                // Jumping
+                EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+                EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Move);
-		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Look);
+                // Moving
+                EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Move);
+                EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Look);
 
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Look);
-	}
-	else
-	{
-		UE_LOG(LogGameJam, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
-	}
+                // Looking
+                EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Look);
+
+                // Painting
+                EnhancedInputComponent->BindAction(PaintAction, ETriggerEvent::Started, this, &AGameJamCharacter::ShootPaint);
+
+                // Switching paint type
+                EnhancedInputComponent->BindAction(SwitchPaintTypeAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::CyclePaintType);
+        }
+        else
+        {
+                UE_LOG(LogGameJam, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+        }
 }
 
 void AGameJamCharacter::Move(const FInputActionValue& Value)
@@ -89,11 +98,63 @@ void AGameJamCharacter::Move(const FInputActionValue& Value)
 
 void AGameJamCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
+        // input is a Vector2D
+        FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	// route the input
-	DoLook(LookAxisVector.X, LookAxisVector.Y);
+        // route the input
+        DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void AGameJamCharacter::ShootPaint()
+{
+        if (!PaintZoneClass)
+        {
+                return;
+        }
+
+        UWorld* World = GetWorld();
+        if (!World)
+        {
+                return;
+        }
+
+        const FVector TraceStart = FollowCamera ? FollowCamera->GetComponentLocation() : GetActorLocation();
+        const FVector TraceDirection = FollowCamera ? FollowCamera->GetForwardVector() : GetActorForwardVector();
+        const FVector TraceEnd = TraceStart + TraceDirection * PaintRange;
+
+        FHitResult Hit;
+        FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(ShootPaint), true, this);
+        QueryParams.AddIgnoredActor(this);
+
+        if (!World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
+        {
+                return;
+        }
+
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.Owner = this;
+        SpawnParams.Instigator = GetInstigator();
+
+        APaintZone* Zone = World->SpawnActor<APaintZone>(PaintZoneClass, Hit.Location, FRotator::ZeroRotator, SpawnParams);
+        if (Zone)
+        {
+                Zone->InitializeFromHit(Hit, CurrentForceType);
+        }
+}
+
+void AGameJamCharacter::CyclePaintType(const FInputActionValue& Value)
+{
+        const float AxisValue = Value.Get<float>();
+        if (FMath::IsNearlyZero(AxisValue))
+        {
+                return;
+        }
+
+        constexpr int32 ForceTypeCount = 3;
+        const int32 Direction = AxisValue > 0.0f ? 1 : -1;
+        int32 ForceTypeIndex = static_cast<int32>(CurrentForceType);
+        ForceTypeIndex = (ForceTypeIndex + Direction + ForceTypeCount) % ForceTypeCount;
+        CurrentForceType = static_cast<EForceType>(ForceTypeIndex);
 }
 
 void AGameJamCharacter::DoMove(float Right, float Forward)
