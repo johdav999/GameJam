@@ -9,6 +9,8 @@
 class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
+class APaintZone;
+enum class EForceType : uint8;
 
 /**
  *  A player-controllable character side scrolling game
@@ -152,6 +154,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoInteract();
 
+	/** Fires a paint projectile that creates a gravity/force zone at the impact point. */
+	UFUNCTION(BlueprintCallable, Category="Side Scrolling|Paint")
+	void ShootPaint(EForceType ForceType, bool bMakePermanent = false);
+
 protected:
 
 	/** Handles advanced jump logic */
@@ -177,4 +183,17 @@ public:
 	/** Returns true if the character has just wall jumped */
 	UFUNCTION(BlueprintPure, Category="Side Scrolling")
 	bool HasWallJumped() const;
+
+protected:
+	/** Paint zone class spawned when shooting paint. */
+	UPROPERTY(EditDefaultsOnly, Category="Side Scrolling|Paint")
+	TSubclassOf<APaintZone> PaintZoneClass;
+
+	/** Maximum distance the paint can travel when fired. */
+	UPROPERTY(EditDefaultsOnly, Category="Side Scrolling|Paint")
+	float PaintRange = 2000.0f;
+
+	/** Small offset applied when spawning zones to avoid clipping into the surface. */
+	UPROPERTY(EditDefaultsOnly, Category="Side Scrolling|Paint")
+	float PaintSurfaceOffset = 5.0f;
 };
