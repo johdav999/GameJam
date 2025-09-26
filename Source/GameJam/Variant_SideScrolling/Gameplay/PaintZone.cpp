@@ -86,7 +86,8 @@ void APaintZone::UpdateVisuals()
     }
 
     // Align the decal so that its forward vector matches the surface normal.
-    const FRotationMatrix RotationMatrix = FRotationMatrix::MakeFromZ(SurfaceNormal);
+    const FMatrix RotationMatrix = FRotationMatrix::MakeFromZ(SurfaceNormal);
+   
     SetActorRotation(RotationMatrix.Rotator());
 
     if (!DecalMID)

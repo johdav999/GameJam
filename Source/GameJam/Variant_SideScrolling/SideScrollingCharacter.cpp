@@ -216,6 +216,7 @@ void ASideScrollingCharacter::DoInteract()
 			Interactable->Interaction(this);
 		}
 	}
+}
 
 void ASideScrollingCharacter::ShootPaint(EForceType ForceType, bool bMakePermanent)
 {
@@ -264,7 +265,7 @@ void ASideScrollingCharacter::ShootPaint(EForceType ForceType, bool bMakePermane
         }
 
         const FVector SpawnLocation = Hit.Location + Hit.Normal * PaintSurfaceOffset;
-        const FRotationMatrix RotationMatrix = FRotationMatrix::MakeFromZ(Hit.Normal);
+        const FMatrix RotationMatrix = FRotationMatrix::MakeFromZ(Hit.Normal);
         const FTransform SpawnTransform(RotationMatrix.Rotator(), SpawnLocation);
 
         FActorSpawnParameters SpawnParams;
@@ -277,7 +278,6 @@ void ASideScrollingCharacter::ShootPaint(EForceType ForceType, bool bMakePermane
         {
                 PaintZone->InitializePaintZone(ForceType, Hit.Normal, bMakePermanent);
         }
-}
 }
 
 void ASideScrollingCharacter::MultiJump()
