@@ -201,8 +201,8 @@ EWorldState AWorldManager::GetNextWorld(EWorldState InWorld)
     case EWorldState::Light:
         return EWorldState::Shadow;
     case EWorldState::Shadow:
-        return EWorldState::Dream;
-    case EWorldState::Dream:
+        return EWorldState::Chaos;
+    case EWorldState::Chaos:
     default:
         return EWorldState::Light;
     }
@@ -213,10 +213,10 @@ EWorldState AWorldManager::GetPreviousWorld(EWorldState InWorld)
     switch (InWorld)
     {
     case EWorldState::Light:
-        return EWorldState::Dream;
+        return EWorldState::Chaos;
     case EWorldState::Shadow:
         return EWorldState::Light;
-    case EWorldState::Dream:
+    case EWorldState::Chaos:
     default:
         return EWorldState::Shadow;
     }
