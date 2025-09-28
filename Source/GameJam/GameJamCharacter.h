@@ -13,6 +13,8 @@ class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
 class APaintZone;
+class AWorldManager;
+enum class EWorldState : uint8;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -82,6 +84,16 @@ protected:
 
         /** Cycles through the available paint force types. */
         void CyclePaintType(const FInputActionValue& Value);
+
+        /** Cycle to the next registered world. */
+        void CycleToNextWorld();
+
+        /** Cycle to the previous registered world. */
+        void CycleToPreviousWorld();
+
+        /** Force switch to a particular world state from Blueprints. */
+        UFUNCTION(BlueprintCallable, Category="World")
+        void ForceSetWorld(EWorldState NewWorld);
 
         UPROPERTY(EditDefaultsOnly, Category="Paint")
         TSubclassOf<class APaintZone> PaintZoneClass;

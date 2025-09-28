@@ -15,6 +15,8 @@
 #include "Math/RotationMatrix.h"
 #include "Gameplay/PaintZone.h"
 #include "GameJam.h"
+#include "InputCoreTypes.h"
+#include "WorldManager.h"
 
 AGameJamCharacter::AGameJamCharacter()
 {
@@ -78,6 +80,10 @@ void AGameJamCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
                 // Switching paint type
                 EnhancedInputComponent->BindAction(SwitchPaintTypeAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::CyclePaintType);
+
+                // World shifting
+                EnhancedInputComponent->BindKey(EKeys::E, IE_Pressed, this, &AGameJamCharacter::CycleToNextWorld);
+                EnhancedInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &AGameJamCharacter::CycleToPreviousWorld);
         }
         else
         {
@@ -153,6 +159,30 @@ void AGameJamCharacter::CyclePaintType(const FInputActionValue& Value)
         int32 ForceTypeIndex = static_cast<int32>(CurrentForceType);
         ForceTypeIndex = (ForceTypeIndex + Direction + ForceTypeCount) % ForceTypeCount;
         CurrentForceType = static_cast<EForceType>(ForceTypeIndex);
+}
+
+void AGameJamCharacter::CycleToNextWorld()
+{
+        if (AWorldManager* Manager = AWorldManager::GetWorldManager(this))
+        {
+                Manager->CycleWorld(1);
+        }
+}
+
+void AGameJamCharacter::CycleToPreviousWorld()
+{
+        if (AWorldManager* Manager = AWorldManager::GetWorldManager(this))
+        {
+                Manager->CycleWorld(-1);
+        }
+}
+
+void AGameJamCharacter::ForceSetWorld(EWorldState NewWorld)
+{
+        if (AWorldManager* Manager = AWorldManager::GetWorldManager(this))
+        {
+                Manager->SetWorld(NewWorld);
+        }
 }
 
 void AGameJamCharacter::DoMove(float Right, float Forward)
