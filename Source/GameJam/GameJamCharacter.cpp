@@ -10,11 +10,11 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
-#include "Engine/EngineTypes.h"
 #include "Engine/World.h"
 #include "Math/RotationMatrix.h"
-#include "Gameplay/PaintZone.h"
+#include "Math/UnrealMathUtility.h"
 #include "GameJam.h"
+#include "WorldManager.h"
 
 AGameJamCharacter::AGameJamCharacter()
 {
@@ -73,11 +73,8 @@ void AGameJamCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
                 // Looking
                 EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Look);
 
-                // Painting
-                EnhancedInputComponent->BindAction(PaintAction, ETriggerEvent::Started, this, &AGameJamCharacter::ShootPaint);
-
-                // Switching paint type
-                EnhancedInputComponent->BindAction(SwitchPaintTypeAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::CyclePaintType);
+                // World shifting
+                EnhancedInputComponent->BindAction(CycleWorldAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::CycleWorld);
         }
         else
         {
@@ -103,44 +100,7 @@ void AGameJamCharacter::Look(const FInputActionValue& Value)
         DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void AGameJamCharacter::ShootPaint()
-{
-        if (!PaintZoneClass)
-        {
-                return;
-        }
-
-        UWorld* World = GetWorld();
-        if (!World)
-        {
-                return;
-        }
-
-        const FVector TraceStart = FollowCamera ? FollowCamera->GetComponentLocation() : GetActorLocation();
-        const FVector TraceDirection = FollowCamera ? FollowCamera->GetForwardVector() : GetActorForwardVector();
-        const FVector TraceEnd = TraceStart + TraceDirection * PaintRange;
-
-        FHitResult Hit;
-        FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(ShootPaint), true, this);
-        QueryParams.AddIgnoredActor(this);
-
-        if (!World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility, QueryParams))
-        {
-                return;
-        }
-
-        FActorSpawnParameters SpawnParams;
-        SpawnParams.Owner = this;
-        SpawnParams.Instigator = GetInstigator();
-
-        APaintZone* Zone = World->SpawnActor<APaintZone>(PaintZoneClass, Hit.Location, FRotator::ZeroRotator, SpawnParams);
-        if (Zone)
-        {
-                Zone->InitializeFromHit(Hit, CurrentForceType);
-        }
-}
-
-void AGameJamCharacter::CyclePaintType(const FInputActionValue& Value)
+void AGameJamCharacter::CycleWorld(const FInputActionValue& Value)
 {
         const float AxisValue = Value.Get<float>();
         if (FMath::IsNearlyZero(AxisValue))
@@ -148,11 +108,20 @@ void AGameJamCharacter::CyclePaintType(const FInputActionValue& Value)
                 return;
         }
 
-        constexpr int32 ForceTypeCount = 3;
-        const int32 Direction = AxisValue > 0.0f ? 1 : -1;
-        int32 ForceTypeIndex = static_cast<int32>(CurrentForceType);
-        ForceTypeIndex = (ForceTypeIndex + Direction + ForceTypeCount) % ForceTypeCount;
-        CurrentForceType = static_cast<EForceType>(ForceTypeIndex);
+        if (UWorld* World = GetWorld())
+        {
+                if (AWorldManager* WorldManager = AWorldManager::Get(World))
+                {
+                        if (AxisValue > 0.0f)
+                        {
+                                WorldManager->ShiftToNextWorld();
+                        }
+                        else
+                        {
+                                WorldManager->ShiftToPreviousWorld();
+                        }
+                }
+        }
 }
 
 void AGameJamCharacter::DoMove(float Right, float Forward)
