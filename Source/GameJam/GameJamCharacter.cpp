@@ -12,6 +12,7 @@
 #include "InputActionValue.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
+#include "Math/RotationMatrix.h"
 #include "Gameplay/PaintZone.h"
 #include "GameJam.h"
 
@@ -25,12 +26,11 @@ AGameJamCharacter::AGameJamCharacter()
         bUseControllerRotationYaw = false;
         bUseControllerRotationRoll = false;
 
-        // Configure character movement for a side-scroller
+        // Configure character movement for third-person traversal
         GetCharacterMovement()->bOrientRotationToMovement = true;
         GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
-        GetCharacterMovement()->SetPlaneConstraintEnabled(true);
-        GetCharacterMovement()->SetPlaneConstraintNormal(FVector(0.f, 1.f, 0.f));
-        GetCharacterMovement()->bConstrainToPlane = true;
+        GetCharacterMovement()->SetPlaneConstraintEnabled(false);
+        GetCharacterMovement()->bConstrainToPlane = false;
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
 	// instead of recompiling to adjust them
@@ -44,11 +44,9 @@ AGameJamCharacter::AGameJamCharacter()
 	// Create a camera boom (pulls in towards the player if there is a collision)
         CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
         CameraBoom->SetupAttachment(RootComponent);
-        CameraBoom->TargetArmLength = 600.0f;
-        CameraBoom->bUsePawnControlRotation = false;
-        CameraBoom->SetUsingAbsoluteRotation(true);
-        CameraBoom->bDoCollisionTest = false;
-        CameraBoom->SetWorldRotation(FRotator(0.f, -90.f, 0.f));
+        CameraBoom->TargetArmLength = 300.0f;
+        CameraBoom->bUsePawnControlRotation = true;
+        CameraBoom->bDoCollisionTest = true;
 
 	// Create a follow camera
         FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
@@ -92,8 +90,8 @@ void AGameJamCharacter::Move(const FInputActionValue& Value)
 	// input is a Vector2D
         FVector2D MovementVector = Value.Get<FVector2D>();
 
-        // route the input (X mapped to horizontal movement)
-        DoMove(MovementVector.X, 0.0f);
+        // route the input to the movement handler (X is right, Y is forward)
+        DoMove(MovementVector.X, MovementVector.Y);
 }
 
 void AGameJamCharacter::Look(const FInputActionValue& Value)
@@ -161,17 +159,23 @@ void AGameJamCharacter::DoMove(float Right, float Forward)
 {
 
 
-        if (GetController() != nullptr)
+        if (Controller != nullptr)
         {
-                // Move strictly along the world X axis for side-scrolling
-                const FVector SideScrollDirection = FVector(1.f, 0.f, 0.f);
-                AddMovementInput(SideScrollDirection, Right);
+                const FRotator ControlRotation = Controller->GetControlRotation();
+                const FRotator YawRotation(0, ControlRotation.Yaw, 0);
+
+                const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+                const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+                AddMovementInput(RightDirection, Right);
+                AddMovementInput(ForwardDirection, Forward);
         }
 }
 
 void AGameJamCharacter::DoLook(float Yaw, float Pitch)
 {
-
+        AddControllerYawInput(Yaw);
+        AddControllerPitchInput(Pitch);
 }
 
 void AGameJamCharacter::DoJumpStart()
