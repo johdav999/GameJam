@@ -1,6 +1,7 @@
 #include "WorldShiftComponent.h"
 #include "WorldManager.h"
 #include "GameFramework/Actor.h"
+#include "Components/ActorComponent.h"
 #include "Components/PrimitiveComponent.h"
 
 UWorldShiftComponent::UWorldShiftComponent()
@@ -23,9 +24,9 @@ void UWorldShiftComponent::BeginPlay()
 
 void UWorldShiftComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    if (CachedWorldManager.IsValid() && WorldShiftDelegateHandle.IsValid())
+    if (CachedWorldManager.IsValid())
     {
-        CachedWorldManager->OnWorldShifted.Remove(WorldShiftDelegateHandle);
+        CachedWorldManager->OnWorldShifted.RemoveDynamic(this, &UWorldShiftComponent::HandleWorldShift);
     }
 
     Super::EndPlay(EndPlayReason);
@@ -48,7 +49,7 @@ void UWorldShiftComponent::BindToWorldManager()
     if (AWorldManager* Manager = AWorldManager::Get(GetWorld()))
     {
         CachedWorldManager = Manager;
-        WorldShiftDelegateHandle = Manager->OnWorldShifted.AddUObject(this, &UWorldShiftComponent::HandleWorldShift);
+        Manager->OnWorldShifted.AddDynamic(this, &UWorldShiftComponent::HandleWorldShift);
     }
 }
 
