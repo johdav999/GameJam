@@ -5,14 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
-#include "Variant_SideScrolling/Gameplay/PaintZone.h"
 #include "GameJamCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
-class APaintZone;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -51,13 +49,9 @@ protected:
         UPROPERTY(EditAnywhere, Category="Input")
         UInputAction* MouseLookAction;
 
-        /** Paint Input Action */
+        /** Cycle World Input Action */
         UPROPERTY(EditAnywhere, Category="Input")
-        UInputAction* PaintAction;
-
-        /** Switch Paint Type Input Action */
-        UPROPERTY(EditAnywhere, Category="Input")
-        UInputAction* SwitchPaintTypeAction;
+        UInputAction* CycleWorldAction;
 
 public:
 
@@ -77,20 +71,8 @@ protected:
         /** Called for looking input */
         void Look(const FInputActionValue& Value);
 
-        /** Fires a paint projectile that creates a paint zone. */
-        void ShootPaint();
-
-        /** Cycles through the available paint force types. */
-        void CyclePaintType(const FInputActionValue& Value);
-
-        UPROPERTY(EditDefaultsOnly, Category="Paint")
-        TSubclassOf<class APaintZone> PaintZoneClass;
-
-        UPROPERTY(EditDefaultsOnly, Category="Paint")
-        float PaintRange = 2000.f;
-
-        UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Paint")
-        EForceType CurrentForceType = EForceType::Push;
+        /** Cycles through the available world states. */
+        void CycleWorld(const FInputActionValue& Value);
 
 public:
 
