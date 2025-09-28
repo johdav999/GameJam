@@ -1,7 +1,10 @@
 #include "WorldShiftComponent.h"
 #include "WorldManager.h"
 #include "GameFramework/Actor.h"
+
+#include "Components/PrimitiveComponent.h"
 #include "Components/ActorComponent.h"
+
 #include "Components/PrimitiveComponent.h"
 
 UWorldShiftComponent::UWorldShiftComponent()
@@ -55,25 +58,33 @@ void UWorldShiftComponent::BindToWorldManager()
 
 void UWorldShiftComponent::HandleWorldShift(EWorldState NewWorld)
 {
+	UE_LOG(LogTemp, Warning, TEXT("WorldShiftComponent handling world shift to: %d"), (int32)NewWorld); 
     OnWorldShift(NewWorld);
 }
-
 void UWorldShiftComponent::OnWorldShift(EWorldState NewWorld)
 {
     const bool bShouldBeVisible = VisibleInWorlds.Contains(NewWorld);
 
     if (AActor* Owner = GetOwner())
     {
+        // Apply to the actor itself
         Owner->SetActorHiddenInGame(!bShouldBeVisible);
         Owner->SetActorEnableCollision(bShouldBeVisible);
 
-        TArray<UActorComponent*> PrimitiveComponents = Owner->GetComponentsByClass(UPrimitiveComponent::StaticClass());
-        for (UActorComponent* Component : PrimitiveComponents)
+        // Collect all primitive components
+        TArray<UPrimitiveComponent*> PrimitiveComponents;
+        Owner->GetComponents<UPrimitiveComponent>(PrimitiveComponents);
+
+        // Apply to each primitive
+        for (UPrimitiveComponent* Primitive : PrimitiveComponents)
         {
-            if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+            if (Primitive)
             {
                 Primitive->SetHiddenInGame(!bShouldBeVisible);
-                Primitive->SetCollisionEnabled(bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+                Primitive->SetCollisionEnabled(
+                    bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics
+                    : ECollisionEnabled::NoCollision
+                );
             }
         }
     }

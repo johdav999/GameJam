@@ -28,6 +28,7 @@ protected:
 
 private:
     void BindToWorldManager();
+    UFUNCTION()
     void HandleWorldShift(EWorldState NewWorld);
 
     TWeakObjectPtr<AWorldManager> CachedWorldManager;

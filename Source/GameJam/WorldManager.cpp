@@ -77,25 +77,30 @@ void AWorldManager::SetWorld(EWorldState NewWorld)
 {
     if (CurrentWorld == NewWorld)
     {
+		UE_LOG(LogTemp, Warning, TEXT("Already in world: %d"), (int32)CurrentWorld);
         return;
     }
-
+	UE_LOG(LogTemp, Warning, TEXT("Shifting world from %d to %d"), (int32)CurrentWorld, (int32)NewWorld);
     CurrentWorld = NewWorld;
     BroadcastWorldShift();
 }
 
 void AWorldManager::ShiftToNextWorld()
 {
-    SetWorld(GetNextWorld(CurrentWorld));
+   EWorldState worldState= GetNextWorld(CurrentWorld);
+    SetWorld(worldState);
+	UE_LOG(LogTemp, Warning, TEXT("Shifted to world: %d"), (int32)CurrentWorld);
 }
 
 void AWorldManager::ShiftToPreviousWorld()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Shifting to previous world from: %d"), (int32)CurrentWorld);
     SetWorld(GetPreviousWorld(CurrentWorld));
 }
 
 void AWorldManager::BroadcastWorldShift()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Broadcasting world shift to: %d"), (int32)CurrentWorld);
     OnWorldShifted.Broadcast(CurrentWorld);
 }
 
