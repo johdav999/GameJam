@@ -1,8 +1,11 @@
 #include "WorldManager.h"
-#include "GameFramework/PlayerController.h"
+
+#include "AudioDevice.h"
+#include "Components/PostProcessComponent.h"
+#include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "InputCoreTypes.h"
+#include "Sound/SoundMix.h"
 
 TWeakObjectPtr<AWorldManager> AWorldManager::ActiveWorldManager = nullptr;
 
@@ -10,8 +13,16 @@ AWorldManager::AWorldManager()
 {
     PrimaryActorTick.bCanEverTick = false;
 
+    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+
+    PostProcessComponent = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcessComponent"));
+    PostProcessComponent->SetupAttachment(RootComponent);
+    PostProcessComponent->bUnbound = true;
+    PostProcessComponent->BlendWeight = 1.0f;
+
     StartingWorld = EWorldState::Light;
     CurrentWorld = StartingWorld;
+    SoundMixFadeTime = 0.5f;
 }
 
 AWorldManager* AWorldManager::Get(UWorld* World)
@@ -43,10 +54,16 @@ void AWorldManager::BeginPlay()
     Super::BeginPlay();
 
     ActiveWorldManager = this;
+
+    if (PostProcessComponent)
+    {
+        DefaultPostProcessSettings = PostProcessComponent->Settings;
+    }
+
     CurrentWorld = StartingWorld;
 
-    InitializeInput();
-    BroadcastWorldShift();
+    ApplyWorldFeedback(CurrentWorld);
+    OnWorldShifted.Broadcast(CurrentWorld);
 }
 
 void AWorldManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -56,21 +73,22 @@ void AWorldManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
         ActiveWorldManager = nullptr;
     }
 
-    Super::EndPlay(EndPlayReason);
-}
-
-void AWorldManager::InitializeInput()
-{
-    if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+    if (FAudioDevice* AudioDevice = GetWorld() ? GetWorld()->GetAudioDeviceRaw() : nullptr)
     {
-        EnableInput(PC);
-
-        if (InputComponent)
+        if (ActiveSoundMix.IsValid())
         {
-            InputComponent->BindKey(EKeys::E, IE_Pressed, this, &AWorldManager::ShiftToNextWorld);
-            InputComponent->BindKey(EKeys::Q, IE_Pressed, this, &AWorldManager::ShiftToPreviousWorld);
+            AudioDevice->PopSoundMixModifier(ActiveSoundMix.Get(), SoundMixFadeTime);
+        }
+
+        if (DefaultSoundMix)
+        {
+            AudioDevice->SetBaseSoundMix(DefaultSoundMix.Get());
         }
     }
+
+    ActiveSoundMix.Reset();
+
+    Super::EndPlay(EndPlayReason);
 }
 
 void AWorldManager::SetWorld(EWorldState NewWorld)
@@ -82,26 +100,102 @@ void AWorldManager::SetWorld(EWorldState NewWorld)
     }
 	UE_LOG(LogTemp, Warning, TEXT("Shifting world from %d to %d"), (int32)CurrentWorld, (int32)NewWorld);
     CurrentWorld = NewWorld;
-    BroadcastWorldShift();
+
+    ApplyWorldFeedback(CurrentWorld);
+    OnWorldShifted.Broadcast(CurrentWorld);
+}
+
+void AWorldManager::CycleWorld(int32 Direction)
+{
+    if (Direction == 0)
+    {
+        return;
+    }
+
+    const int32 Steps = FMath::Abs(Direction);
+    EWorldState TargetWorld = CurrentWorld;
+    for (int32 StepIndex = 0; StepIndex < Steps; ++StepIndex)
+    {
+        TargetWorld = (Direction > 0) ? GetNextWorld(TargetWorld) : GetPreviousWorld(TargetWorld);
+    }
+
+    SetWorld(TargetWorld);
 }
 
 void AWorldManager::ShiftToNextWorld()
 {
-   EWorldState worldState= GetNextWorld(CurrentWorld);
-    SetWorld(worldState);
-	UE_LOG(LogTemp, Warning, TEXT("Shifted to world: %d"), (int32)CurrentWorld);
+    CycleWorld(1);
 }
 
 void AWorldManager::ShiftToPreviousWorld()
 {
+    CycleWorld(-1);
+}
+
+void AWorldManager::ApplyWorldFeedback(EWorldState NewWorld)
+{
+    ApplyPostProcessForWorld(NewWorld);
+    ApplyAudioForWorld(NewWorld);
+}
+
+void AWorldManager::ApplyPostProcessForWorld(EWorldState NewWorld)
+{
+    if (!PostProcessComponent)
+    {
+        return;
+    }
+
+    if (const FPostProcessSettings* Settings = WorldPostProcessSettings.Find(NewWorld))
+    {
+        PostProcessComponent->Settings = *Settings;
+    }
+    else
+    {
+        PostProcessComponent->Settings = DefaultPostProcessSettings;
+    }
+
+    PostProcessComponent->BlendWeight = 1.0f;
+}
+
+void AWorldManager::ApplyAudioForWorld(EWorldState NewWorld)
+{
+    USoundMix* DesiredMix = nullptr;
+    if (TObjectPtr<USoundMix>* const MixPtr = WorldSoundMixes.Find(NewWorld))
+    {
+        DesiredMix = MixPtr->Get();
+    }
+
+    if (!DesiredMix)
+    {
+        DesiredMix = DefaultSoundMix.Get();
+    }
+
+    if (DesiredMix == ActiveSoundMix.Get())
+    {
+        return;
+    }
+
+    if (FAudioDevice* AudioDevice = GetWorld() ? GetWorld()->GetAudioDeviceRaw() : nullptr)
+    {
+        if (ActiveSoundMix.IsValid())
+        {
+            AudioDevice->PopSoundMixModifier(ActiveSoundMix.Get(), SoundMixFadeTime);
+        }
 	UE_LOG(LogTemp, Warning, TEXT("Shifting to previous world from: %d"), (int32)CurrentWorld);
     SetWorld(GetPreviousWorld(CurrentWorld));
 }
 
-void AWorldManager::BroadcastWorldShift()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Broadcasting world shift to: %d"), (int32)CurrentWorld);
-    OnWorldShifted.Broadcast(CurrentWorld);
+        if (DesiredMix)
+        {
+            AudioDevice->PushSoundMixModifier(DesiredMix, true, true, SoundMixFadeTime);
+            AudioDevice->SetBaseSoundMix(DesiredMix);
+            ActiveSoundMix = DesiredMix;
+        }
+        else
+        {
+            ActiveSoundMix.Reset();
+        }
+    }
 }
 
 EWorldState AWorldManager::GetNextWorld(EWorldState InWorld)
@@ -111,8 +205,8 @@ EWorldState AWorldManager::GetNextWorld(EWorldState InWorld)
     case EWorldState::Light:
         return EWorldState::Shadow;
     case EWorldState::Shadow:
-        return EWorldState::Dream;
-    case EWorldState::Dream:
+        return EWorldState::Chaos;
+    case EWorldState::Chaos:
     default:
         return EWorldState::Light;
     }
@@ -123,10 +217,10 @@ EWorldState AWorldManager::GetPreviousWorld(EWorldState InWorld)
     switch (InWorld)
     {
     case EWorldState::Light:
-        return EWorldState::Dream;
+        return EWorldState::Chaos;
     case EWorldState::Shadow:
         return EWorldState::Light;
-    case EWorldState::Dream:
+    case EWorldState::Chaos:
     default:
         return EWorldState::Shadow;
     }
