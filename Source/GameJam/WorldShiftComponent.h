@@ -31,5 +31,4 @@ private:
     void HandleWorldShift(EWorldState NewWorld);
 
     TWeakObjectPtr<AWorldManager> CachedWorldManager;
-    FDelegateHandle WorldShiftDelegateHandle;
 };
