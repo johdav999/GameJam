@@ -5,8 +5,10 @@
 #include "GameFramework/Actor.h"
 #include "WorldManager.generated.h"
 
+class UAudioComponent;
 class UPostProcessComponent;
-class USoundMix;
+class USoundBase;
+class USoundSubmix;
 
 /** Enum describing the three available world states. */
 UENUM(BlueprintType)
@@ -90,24 +92,24 @@ private:
     UPROPERTY(VisibleInstanceOnly, Category = "World Shift|Visual", meta = (AllowPrivateAccess = "true"))
     FPostProcessSettings DefaultPostProcessSettings;
 
-    /** Optional default mix used when no world specific mix is set. */
+    /** Per-world output submix routing. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Audio", meta = (AllowPrivateAccess = "true"))
-    TObjectPtr<USoundMix> DefaultSoundMix;
+    TMap<EWorldState, TObjectPtr<USoundSubmix>> WorldSubmixes;
 
-    /** Per-world sound mixes to fade to. */
+    /** Per-world music assets. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Audio", meta = (AllowPrivateAccess = "true"))
-    TMap<EWorldState, TObjectPtr<USoundMix>> WorldSoundMixes;
+    TMap<EWorldState, TObjectPtr<USoundBase>> WorldSongs;
 
-    /** Seconds to fade between audio mixes. */
+    /** Seconds to fade between world songs. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Audio", meta = (AllowPrivateAccess = "true"))
-    float SoundMixFadeTime;
+    float MusicFadeTime;
 
     /** Starting world configured in the editor. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift", meta = (AllowPrivateAccess = "true"))
     EWorldState StartingWorld;
 
-    /** Cached pointer to the currently active sound mix. */
-    TWeakObjectPtr<USoundMix> ActiveSoundMix;
+    /** Currently active music component. */
+    TWeakObjectPtr<UAudioComponent> ActiveMusicComponent;
 
     /** Currently active world. */
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "World Shift", meta = (AllowPrivateAccess = "true"))
