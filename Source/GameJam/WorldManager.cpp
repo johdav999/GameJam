@@ -194,11 +194,12 @@ void AWorldManager::ApplyAudioForWorld(EWorldState NewWorld)
     }
 
     if (const TObjectPtr<USoundSubmix>* SubmixPtr = WorldSubmixes.Find(NewWorld))
-    {
-        if (USoundSubmix* Submix = SubmixPtr->Get())
-        {
-            NewMusicComponent->SoundSubmixOverride = Submix;
-        }
+    {      
+            if (USoundSubmix* Submix = SubmixPtr->Get())
+            {
+                // Route the new audio component fully into the chosen submix
+                NewMusicComponent->SetSubmixSend(Submix, 1.0f);
+            }        
     }
 
     ActiveMusicComponent = NewMusicComponent;
@@ -220,8 +221,8 @@ EWorldState AWorldManager::GetNextWorld(EWorldState InWorld)
     case EWorldState::Light:
         return EWorldState::Shadow;
     case EWorldState::Shadow:
-        return EWorldState::Dream;
-    case EWorldState::Dream:
+        return EWorldState::Chaos;
+    case EWorldState::Chaos:
     default:
         return EWorldState::Light;
     }
@@ -232,10 +233,10 @@ EWorldState AWorldManager::GetPreviousWorld(EWorldState InWorld)
     switch (InWorld)
     {
     case EWorldState::Light:
-        return EWorldState::Dream;
+        return EWorldState::Chaos;
     case EWorldState::Shadow:
         return EWorldState::Light;
-    case EWorldState::Dream:
+    case EWorldState::Chaos:
     default:
         return EWorldState::Shadow;
     }
