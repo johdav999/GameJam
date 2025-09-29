@@ -1,11 +1,13 @@
 #include "WorldManager.h"
 
-#include "AudioDevice.h"
 #include "Components/PostProcessComponent.h"
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "Sound/SoundMix.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+#include "Sound/SoundSubmix.h"
+#include "Components/AudioComponent.h"
 
 TWeakObjectPtr<AWorldManager> AWorldManager::ActiveWorldManager = nullptr;
 
@@ -22,7 +24,7 @@ AWorldManager::AWorldManager()
 
     StartingWorld = EWorldState::Light;
     CurrentWorld = StartingWorld;
-    SoundMixFadeTime = 0.5f;
+    MusicFadeTime = 0.5f;
 }
 
 AWorldManager* AWorldManager::Get(UWorld* World)
@@ -73,20 +75,21 @@ void AWorldManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
         ActiveWorldManager = nullptr;
     }
 
-    if (FAudioDevice* AudioDevice = GetWorld() ? GetWorld()->GetAudioDeviceRaw() : nullptr)
+    if (ActiveMusicComponent.IsValid())
     {
-        if (ActiveSoundMix.IsValid())
+        if (MusicFadeTime > 0.0f)
         {
+
+            ActiveMusicComponent->FadeOut(MusicFadeTime, 0.0f);
             AudioDevice->PopSoundMixModifier(ActiveSoundMix.Get());
-        }
 
-        if (DefaultSoundMix)
+        }
+        else
         {
-            AudioDevice->SetBaseSoundMix(DefaultSoundMix.Get());
+            ActiveMusicComponent->Stop();
         }
+        ActiveMusicComponent.Reset();
     }
-
-    ActiveSoundMix.Reset();
 
     Super::EndPlay(EndPlayReason);
 }
@@ -95,10 +98,8 @@ void AWorldManager::SetWorld(EWorldState NewWorld)
 {
     if (CurrentWorld == NewWorld)
     {
-		UE_LOG(LogTemp, Warning, TEXT("Already in world: %d"), (int32)CurrentWorld);
         return;
     }
-	UE_LOG(LogTemp, Warning, TEXT("Shifting world from %d to %d"), (int32)CurrentWorld, (int32)NewWorld);
     CurrentWorld = NewWorld;
 
     ApplyWorldFeedback(CurrentWorld);
@@ -159,27 +160,62 @@ void AWorldManager::ApplyPostProcessForWorld(EWorldState NewWorld)
 
 void AWorldManager::ApplyAudioForWorld(EWorldState NewWorld)
 {
-    USoundMix* DesiredMix = nullptr;
-    if (TObjectPtr<USoundMix>* const MixPtr = WorldSoundMixes.Find(NewWorld))
+    if (ActiveMusicComponent.IsValid())
     {
-        DesiredMix = MixPtr->Get();
+        if (MusicFadeTime > 0.0f)
+        {
+            ActiveMusicComponent->FadeOut(MusicFadeTime, 0.0f);
+        }
+        else
+        {
+            ActiveMusicComponent->Stop();
+        }
+        ActiveMusicComponent.Reset();
     }
 
-    if (!DesiredMix)
-    {
-        DesiredMix = DefaultSoundMix.Get();
-    }
-
-    if (DesiredMix == ActiveSoundMix.Get())
+    const TObjectPtr<USoundBase>* SongPtr = WorldSongs.Find(NewWorld);
+    USoundBase* WorldSong = SongPtr ? SongPtr->Get() : nullptr;
+    if (!WorldSong)
     {
         return;
     }
+
+    UAudioComponent* const NewMusicComponent = UGameplayStatics::SpawnSound2D(
+        this,
+        WorldSong,
+        0.0f,
+        1.0f,
+        0.0f,
+        nullptr,
+        false,
+        true);
+    if (!NewMusicComponent)
+    {
+        return;
+    }
+
+    if (const TObjectPtr<USoundSubmix>* SubmixPtr = WorldSubmixes.Find(NewWorld))
+
 	FAudioDevice* AudioDevice = nullptr;    
     AudioDevice = GetWorld() ? GetWorld()->GetAudioDeviceRaw() : nullptr;
     if (AudioDevice)
+
     {
-        if (ActiveSoundMix.IsValid())
+        if (USoundSubmix* Submix = SubmixPtr->Get())
         {
+            NewMusicComponent->SoundSubmixOverride = Submix;
+        }
+    }
+
+    ActiveMusicComponent = NewMusicComponent;
+
+    if (MusicFadeTime > 0.0f)
+    {
+        NewMusicComponent->FadeIn(MusicFadeTime, 1.0f);
+    }
+    else
+    {
+        NewMusicComponent->SetVolumeMultiplier(1.0f);
             AudioDevice->PopSoundMixModifier(ActiveSoundMix.Get());
         }
 	UE_LOG(LogTemp, Warning, TEXT("Shifting to previous world from: %d"), (int32)CurrentWorld);
@@ -206,8 +242,8 @@ EWorldState AWorldManager::GetNextWorld(EWorldState InWorld)
     case EWorldState::Light:
         return EWorldState::Shadow;
     case EWorldState::Shadow:
-        return EWorldState::Chaos;
-    case EWorldState::Chaos:
+        return EWorldState::Dream;
+    case EWorldState::Dream:
     default:
         return EWorldState::Light;
     }
@@ -218,10 +254,10 @@ EWorldState AWorldManager::GetPreviousWorld(EWorldState InWorld)
     switch (InWorld)
     {
     case EWorldState::Light:
-        return EWorldState::Chaos;
+        return EWorldState::Dream;
     case EWorldState::Shadow:
         return EWorldState::Light;
-    case EWorldState::Chaos:
+    case EWorldState::Dream:
     default:
         return EWorldState::Shadow;
     }
