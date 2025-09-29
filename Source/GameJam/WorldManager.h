@@ -55,6 +55,8 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "World Shift")
     FOnWorldShifted OnWorldShifted;
 
+
+
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -67,6 +69,7 @@ protected:
 
     /** Applies audio snapshot for the supplied world. */
     void ApplyAudioForWorld(EWorldState NewWorld);
+
 
 private:
     static TWeakObjectPtr<AWorldManager> ActiveWorldManager;
@@ -109,6 +112,7 @@ private:
     /** Currently active world. */
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "World Shift", meta = (AllowPrivateAccess = "true"))
     EWorldState CurrentWorld;
+
 };
 
 /**
