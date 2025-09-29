@@ -79,7 +79,10 @@ void AWorldManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
     {
         if (MusicFadeTime > 0.0f)
         {
+
             ActiveMusicComponent->FadeOut(MusicFadeTime, 0.0f);
+            AudioDevice->PopSoundMixModifier(ActiveSoundMix.Get());
+
         }
         else
         {
@@ -192,6 +195,11 @@ void AWorldManager::ApplyAudioForWorld(EWorldState NewWorld)
     }
 
     if (const TObjectPtr<USoundSubmix>* SubmixPtr = WorldSubmixes.Find(NewWorld))
+
+	FAudioDevice* AudioDevice = nullptr;    
+    AudioDevice = GetWorld() ? GetWorld()->GetAudioDeviceRaw() : nullptr;
+    if (AudioDevice)
+
     {
         if (USoundSubmix* Submix = SubmixPtr->Get())
         {
@@ -208,8 +216,24 @@ void AWorldManager::ApplyAudioForWorld(EWorldState NewWorld)
     else
     {
         NewMusicComponent->SetVolumeMultiplier(1.0f);
+            AudioDevice->PopSoundMixModifier(ActiveSoundMix.Get());
+        }
+	UE_LOG(LogTemp, Warning, TEXT("Shifting to previous world from: %d"), (int32)CurrentWorld);
+    SetWorld(GetPreviousWorld(CurrentWorld));
     }
-}
+
+        if (DesiredMix)
+        {
+            AudioDevice->PushSoundMixModifier(DesiredMix, true, true);
+            AudioDevice->SetBaseSoundMix(DesiredMix);
+            ActiveSoundMix = DesiredMix;
+        }
+        else
+        {
+            ActiveSoundMix.Reset();
+        }
+    }
+
 
 EWorldState AWorldManager::GetNextWorld(EWorldState InWorld)
 {

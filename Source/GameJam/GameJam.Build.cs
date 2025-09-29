@@ -17,8 +17,9 @@ public class GameJam : ModuleRules
 			"AIModule",
 			"StateTreeModule",
 			"GameplayStateTreeModule",
-			"UMG",
-			"Slate"
+			"UMG", "AudioMixer",
+
+            "Slate"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
