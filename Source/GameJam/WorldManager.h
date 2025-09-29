@@ -3,19 +3,17 @@
 #include "CoreMinimal.h"
 #include "Engine/PostProcessVolume.h"
 #include "GameFramework/Actor.h"
+#include "WorldShiftTypes.h"
 #include "WorldManager.generated.h"
+
+
+
+
 
 class UPostProcessComponent;
 class USoundMix;
 
 /** Enum describing the three available world states. */
-UENUM(BlueprintType)
-enum class EWorldState : uint8
-{
-    Light UMETA(DisplayName = "Light"),
-    Shadow UMETA(DisplayName = "Shadow"),
-    Dream UMETA(DisplayName = "Dream")
-};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldShifted, EWorldState, NewWorld);
 
