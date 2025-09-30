@@ -179,15 +179,14 @@ void AWorldManager::ApplyAudioForWorld(EWorldState NewWorld)
         return;
     }
 
-    UAudioComponent* NewMusicComponent = UGameplayStatics::SpawnSound2D(
-        this,
-        WorldSong,
-        0.0f,
-        1.0f,
-        0.0f,
-        nullptr,
-        false,
-        true);
+    UAudioComponent* NewMusicComponent = NewObject<UAudioComponent>(this);
+    if (NewMusicComponent)
+    {
+        NewMusicComponent->bAutoActivate = false;
+        NewMusicComponent->SetSound(WorldSong);
+        NewMusicComponent->RegisterComponent(); // make it part of the world
+    }
+
     if (!NewMusicComponent)
     {
         return;
