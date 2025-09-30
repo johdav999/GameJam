@@ -64,7 +64,13 @@ protected:
     TObjectPtr<UMaterialInterface> SolidMaterial;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
+    TObjectPtr<UMaterialInterface> PreWarningMaterial;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
     TMap<EWorldState, TObjectPtr<UMaterialInterface>> GhostMaterials;
+
+    UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
+    void OnPreWarningStart(EWorldState WorldContext);
 
 private:
     UFUNCTION()
@@ -74,10 +80,12 @@ private:
     void ApplySolidState();
     void ApplyGhostState(EWorldState WorldContext);
     void ApplyHiddenState();
+    void ApplyPreWarningState();
 
     void StartTimedSolidCycle();
     void StopTimedSolidCycle();
     void HandleTimedSolidToggle();
+    void CompleteTimedSolidToggle();
 
     EPlatformState GetBehaviorForWorld(EWorldState WorldContext) const;
     void ApplyMaterial(UMaterialInterface* Material);
@@ -86,6 +94,7 @@ private:
     TWeakObjectPtr<AWorldManager> CachedWorldManager;
 
     FTimerHandle TimedSolidTimerHandle;
+    FTimerHandle PreWarningTimerHandle;
 
     EWorldState CurrentWorld;
     bool bTimedSolidCurrentlySolid;

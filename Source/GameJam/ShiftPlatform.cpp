@@ -151,6 +151,22 @@ void AShiftPlatform::ApplyHiddenState()
     PlatformMesh->SetVisibility(false, true);
 }
 
+void AShiftPlatform::ApplyPreWarningState()
+{
+    if (!PlatformMesh)
+    {
+        return;
+    }
+
+    PlatformMesh->SetVisibility(true, true);
+    PlatformMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    if (PreWarningMaterial)
+    {
+        ApplyMaterial(PreWarningMaterial.Get());
+    }
+}
+
 void AShiftPlatform::StartTimedSolidCycle()
 {
     StopTimedSolidCycle();
@@ -173,6 +189,7 @@ void AShiftPlatform::StopTimedSolidCycle()
     if (UWorld* World = GetWorld())
     {
         World->GetTimerManager().ClearTimer(TimedSolidTimerHandle);
+        World->GetTimerManager().ClearTimer(PreWarningTimerHandle);
     }
 
     bTimedSolidCurrentlySolid = false;
@@ -180,8 +197,29 @@ void AShiftPlatform::StopTimedSolidCycle()
 
 void AShiftPlatform::HandleTimedSolidToggle()
 {
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(PreWarningTimerHandle);
+    }
+
     bTimedSolidCurrentlySolid = !bTimedSolidCurrentlySolid;
 
+    OnPreWarningStart(CurrentWorld);
+
+    ApplyPreWarningState();
+
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().SetTimer(PreWarningTimerHandle, this, &AShiftPlatform::CompleteTimedSolidToggle, 1.0f, false);
+    }
+    else
+    {
+        CompleteTimedSolidToggle();
+    }
+}
+
+void AShiftPlatform::CompleteTimedSolidToggle()
+{
     if (bTimedSolidCurrentlySolid)
     {
         ApplySolidState();
