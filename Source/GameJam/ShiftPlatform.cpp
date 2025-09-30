@@ -16,17 +16,24 @@ AShiftPlatform::AShiftPlatform()
 
     WorldShiftComponent = CreateDefaultSubobject<UWorldShiftComponent>(TEXT("WorldShiftComponent"));
 
-    WorldBehaviors.Add(EWorldState::Light, EPlatformState::Solid);
-    WorldBehaviors.Add(EWorldState::Shadow, EPlatformState::Ghost);
-    WorldBehaviors.Add(EWorldState::Chaos, EPlatformState::TimedSolid);
+    PrefabType = EPlatformPrefabType::LightBridge;
 
     CurrentWorld = EWorldState::Light;
     bTimedSolidCurrentlySolid = false;
 }
 
+void AShiftPlatform::OnConstruction(const FTransform& Transform)
+{
+    Super::OnConstruction(Transform);
+
+    InitializeWorldBehaviorsFromPrefab();
+}
+
 void AShiftPlatform::BeginPlay()
 {
     Super::BeginPlay();
+
+    InitializeWorldBehaviorsFromPrefab();
 
     if (AWorldManager* Manager = AWorldManager::Get(GetWorld()))
     {
@@ -206,6 +213,58 @@ void AShiftPlatform::ApplyMaterial(UMaterialInterface* Material)
     for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
     {
         PlatformMesh->SetMaterial(MaterialIndex, Material);
+    }
+}
+
+void AShiftPlatform::InitializeWorldBehaviorsFromPrefab()
+{
+    if (WorldBehaviors.Num() > 0)
+    {
+        return;
+    }
+
+    auto Configure = [this](EPlatformState LightState, EPlatformState ShadowState, EPlatformState ChaosState)
+    {
+        WorldBehaviors.Add(EWorldState::Light, LightState);
+        WorldBehaviors.Add(EWorldState::Shadow, ShadowState);
+        WorldBehaviors.Add(EWorldState::Chaos, ChaosState);
+    };
+
+    switch (PrefabType)
+    {
+    case EPlatformPrefabType::LightBridge:
+        Configure(EPlatformState::Solid, EPlatformState::Hidden, EPlatformState::Hidden);
+        break;
+    case EPlatformPrefabType::LightToShadow:
+        Configure(EPlatformState::Solid, EPlatformState::Ghost, EPlatformState::Hidden);
+        break;
+    case EPlatformPrefabType::ShadowBridge:
+        Configure(EPlatformState::Hidden, EPlatformState::Solid, EPlatformState::Hidden);
+        break;
+    case EPlatformPrefabType::ShadowIllusion:
+        Configure(EPlatformState::Solid, EPlatformState::Ghost, EPlatformState::Solid);
+        break;
+    case EPlatformPrefabType::ChaosFlicker:
+        Configure(EPlatformState::Hidden, EPlatformState::Hidden, EPlatformState::TimedSolid);
+        break;
+    case EPlatformPrefabType::ChaosTrap:
+        Configure(EPlatformState::Solid, EPlatformState::Solid, EPlatformState::Ghost);
+        break;
+    case EPlatformPrefabType::ChaosBridge:
+        Configure(EPlatformState::Hidden, EPlatformState::Hidden, EPlatformState::Solid);
+        break;
+    case EPlatformPrefabType::ShiftChain:
+        Configure(EPlatformState::Solid, EPlatformState::Solid, EPlatformState::TimedSolid);
+        break;
+    case EPlatformPrefabType::HiddenSurprise:
+        Configure(EPlatformState::Hidden, EPlatformState::Ghost, EPlatformState::Solid);
+        break;
+    case EPlatformPrefabType::DeceptionPlatform:
+        Configure(EPlatformState::Solid, EPlatformState::Ghost, EPlatformState::TimedSolid);
+        break;
+    default:
+        Configure(EPlatformState::Solid, EPlatformState::Ghost, EPlatformState::TimedSolid);
+        break;
     }
 }
 

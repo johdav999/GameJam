@@ -20,6 +20,21 @@ enum class EPlatformState : uint8
     TimedSolid UMETA(DisplayName = "Timed Solid")
 };
 
+UENUM(BlueprintType)
+enum class EPlatformPrefabType : uint8
+{
+    LightBridge UMETA(DisplayName = "Light Bridge"),
+    LightToShadow UMETA(DisplayName = "Light to Shadow"),
+    ShadowBridge UMETA(DisplayName = "Shadow Bridge"),
+    ShadowIllusion UMETA(DisplayName = "Shadow Illusion"),
+    ChaosFlicker UMETA(DisplayName = "Chaos Flicker"),
+    ChaosTrap UMETA(DisplayName = "Chaos Trap"),
+    ChaosBridge UMETA(DisplayName = "Chaos Bridge"),
+    ShiftChain UMETA(DisplayName = "Shift Chain"),
+    HiddenSurprise UMETA(DisplayName = "Hidden Surprise"),
+    DeceptionPlatform UMETA(DisplayName = "Deception Platform")
+};
+
 UCLASS()
 class GAMEJAM_API AShiftPlatform : public AActor
 {
@@ -29,6 +44,7 @@ public:
     AShiftPlatform();
 
 protected:
+    virtual void OnConstruction(const FTransform& Transform) override;
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
@@ -37,6 +53,9 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Shift")
     TObjectPtr<UWorldShiftComponent> WorldShiftComponent;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "World Shift|Prefab")
+    EPlatformPrefabType PrefabType;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift")
     TMap<EWorldState, EPlatformState> WorldBehaviors;
@@ -62,6 +81,7 @@ private:
 
     EPlatformState GetBehaviorForWorld(EWorldState WorldContext) const;
     void ApplyMaterial(UMaterialInterface* Material);
+    void InitializeWorldBehaviorsFromPrefab();
 
     TWeakObjectPtr<AWorldManager> CachedWorldManager;
 
