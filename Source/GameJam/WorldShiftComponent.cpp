@@ -63,29 +63,5 @@ void UWorldShiftComponent::HandleWorldShift(EWorldState NewWorld)
 }
 void UWorldShiftComponent::OnWorldShift(EWorldState NewWorld)
 {
-    const bool bShouldBeVisible = VisibleInWorlds.Contains(NewWorld);
 
-    if (AActor* Owner = GetOwner())
-    {
-        // Apply to the actor itself
-        Owner->SetActorHiddenInGame(!bShouldBeVisible);
-        Owner->SetActorEnableCollision(bShouldBeVisible);
-
-        // Collect all primitive components
-        TArray<UPrimitiveComponent*> PrimitiveComponents;
-        Owner->GetComponents<UPrimitiveComponent>(PrimitiveComponents);
-
-        // Apply to each primitive
-        for (UPrimitiveComponent* Primitive : PrimitiveComponents)
-        {
-            if (Primitive)
-            {
-                Primitive->SetHiddenInGame(!bShouldBeVisible);
-                Primitive->SetCollisionEnabled(
-                    bShouldBeVisible ? ECollisionEnabled::QueryAndPhysics
-                    : ECollisionEnabled::NoCollision
-                );
-            }
-        }
-    }
 }

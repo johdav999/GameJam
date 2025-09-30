@@ -18,7 +18,7 @@ AShiftPlatform::AShiftPlatform()
 
     WorldBehaviors.Add(EWorldState::Light, EPlatformState::Solid);
     WorldBehaviors.Add(EWorldState::Shadow, EPlatformState::Ghost);
-    WorldBehaviors.Add(EWorldState::Chaos, EPlatformState::Solid);
+    WorldBehaviors.Add(EWorldState::Chaos, EPlatformState::TimedSolid);
 
     CurrentWorld = EWorldState::Light;
     bTimedSolidCurrentlySolid = false;
@@ -102,7 +102,7 @@ void AShiftPlatform::ApplySolidState()
         return;
     }
 
-    PlatformMesh->SetHiddenInGame(false);
+   // PlatformMesh->SetHiddenInGame(false);
     PlatformMesh->SetVisibility(true, true);
     PlatformMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
@@ -119,8 +119,8 @@ void AShiftPlatform::ApplyGhostState(EWorldState WorldContext)
         return;
     }
 
-    PlatformMesh->SetHiddenInGame(false);
-    PlatformMesh->SetVisibility(true, true);
+   // PlatformMesh->SetHiddenInGame(false);
+   PlatformMesh->SetVisibility(true, true);
     PlatformMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
     if (const TObjectPtr<UMaterialInterface>* MaterialPtr = GhostMaterials.Find(WorldContext))
@@ -140,7 +140,7 @@ void AShiftPlatform::ApplyHiddenState()
     }
 
     PlatformMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    PlatformMesh->SetHiddenInGame(true);
+
     PlatformMesh->SetVisibility(false, true);
 }
 
