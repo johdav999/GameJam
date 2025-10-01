@@ -8,6 +8,7 @@
 #include "Sound/SoundBase.h"
 #include "Sound/SoundSubmix.h"
 #include "Components/AudioComponent.h"
+#include "TimerManager.h"
 
 TWeakObjectPtr<AWorldManager> AWorldManager::ActiveWorldManager = nullptr;
 
@@ -25,6 +26,9 @@ AWorldManager::AWorldManager()
     StartingWorld = EWorldState::Light;
     CurrentWorld = StartingWorld;
     MusicFadeTime = 0.5f;
+    CycleInterval = 2.0f;
+    PreWarningTime = 1.0f;
+    bGlobalTimedSolid = true;
 }
 
 AWorldManager* AWorldManager::Get(UWorld* World)
@@ -66,10 +70,15 @@ void AWorldManager::BeginPlay()
 
     ApplyWorldFeedback(CurrentWorld);
     OnWorldShifted.Broadcast(CurrentWorld);
+
+    OnTimedSolidPhaseChanged.Broadcast(bGlobalTimedSolid);
+    StartGlobalTimedSolidCycle();
 }
 
 void AWorldManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    StopGlobalTimedSolidCycle();
+
     if (ActiveWorldManager.Get() == this)
     {
         ActiveWorldManager = nullptr;
@@ -211,6 +220,55 @@ void AWorldManager::ApplyAudioForWorld(EWorldState NewWorld)
     {
         NewMusicComponent->SetVolumeMultiplier(1.0f);
     }
+}
+
+void AWorldManager::StartGlobalTimedSolidCycle()
+{
+    StopGlobalTimedSolidCycle();
+
+    const float Interval = FMath::Max(0.01f, CycleInterval);
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().SetTimer(GlobalTimedSolidHandle, this, &AWorldManager::HandleGlobalTimedSolidToggle, Interval, true, Interval);
+
+        if (PreWarningTime > 0.0f && PreWarningTime < Interval)
+        {
+            const float Delay = Interval - PreWarningTime;
+            World->GetTimerManager().SetTimer(PreWarningHandle, this, &AWorldManager::BroadcastPreWarning, Delay, false);
+        }
+    }
+}
+
+void AWorldManager::StopGlobalTimedSolidCycle()
+{
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(GlobalTimedSolidHandle);
+        World->GetTimerManager().ClearTimer(PreWarningHandle);
+    }
+}
+
+void AWorldManager::HandleGlobalTimedSolidToggle()
+{
+    bGlobalTimedSolid = !bGlobalTimedSolid;
+    OnTimedSolidPhaseChanged.Broadcast(bGlobalTimedSolid);
+
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().ClearTimer(PreWarningHandle);
+
+        const float Interval = FMath::Max(0.01f, CycleInterval);
+        if (PreWarningTime > 0.0f && PreWarningTime < Interval)
+        {
+            const float Delay = Interval - PreWarningTime;
+            World->GetTimerManager().SetTimer(PreWarningHandle, this, &AWorldManager::BroadcastPreWarning, Delay, false);
+        }
+    }
+}
+
+void AWorldManager::BroadcastPreWarning()
+{
+    OnTimedSolidPreWarning.Broadcast(!bGlobalTimedSolid);
 }
 
 EWorldState AWorldManager::GetNextWorld(EWorldState InWorld)

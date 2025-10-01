@@ -3,7 +3,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInterface.h"
-#include "TimerManager.h"
 #include "WorldManager.h"
 #include "WorldShiftComponent.h"
 
@@ -41,6 +40,8 @@ void AShiftPlatform::BeginPlay()
     {
         CachedWorldManager = Manager;
         Manager->OnWorldShifted.AddDynamic(this, &AShiftPlatform::HandleWorldShift);
+        Manager->OnTimedSolidPhaseChanged.AddDynamic(this, &AShiftPlatform::OnGlobalTimedSolidPhaseChanged);
+        Manager->OnTimedSolidPreWarning.AddDynamic(this, &AShiftPlatform::OnGlobalTimedSolidPreWarning);
         HandleWorldShift(Manager->GetCurrentWorld());
     }
     else
@@ -51,11 +52,11 @@ void AShiftPlatform::BeginPlay()
 
 void AShiftPlatform::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    StopTimedSolidCycle();
-
     if (CachedWorldManager.IsValid())
     {
         CachedWorldManager->OnWorldShifted.RemoveDynamic(this, &AShiftPlatform::HandleWorldShift);
+        CachedWorldManager->OnTimedSolidPhaseChanged.RemoveDynamic(this, &AShiftPlatform::OnGlobalTimedSolidPhaseChanged);
+        CachedWorldManager->OnTimedSolidPreWarning.RemoveDynamic(this, &AShiftPlatform::OnGlobalTimedSolidPreWarning);
         CachedWorldManager.Reset();
     }
 
@@ -75,30 +76,32 @@ void AShiftPlatform::ApplyPlatformState(EPlatformState NewState, EWorldState Wor
     switch (NewState)
     {
     case EPlatformState::Solid:
-        StopTimedSolidCycle();
         ApplySolidState();
         break;
     case EPlatformState::Ghost:
-        StopTimedSolidCycle();
         ApplyGhostState(WorldContext);
         break;
     case EPlatformState::Hidden:
-        StopTimedSolidCycle();
         ApplyHiddenState();
         break;
     case EPlatformState::TimedSolid:
         if (WorldContext == EWorldState::Chaos)
         {
-            StartTimedSolidCycle();
+            if (CachedWorldManager.IsValid())
+            {
+                OnGlobalTimedSolidPhaseChanged(CachedWorldManager->IsGlobalTimedSolidSolid());
+            }
+            else
+            {
+                ApplySolidState();
+            }
         }
         else
         {
-            StopTimedSolidCycle();
             ApplySolidState();
         }
         break;
     default:
-        StopTimedSolidCycle();
         ApplySolidState();
         break;
     }
@@ -169,62 +172,14 @@ void AShiftPlatform::ApplyPreWarningState()
     }
 }
 
-void AShiftPlatform::StartTimedSolidCycle()
+void AShiftPlatform::OnGlobalTimedSolidPhaseChanged(bool bNowSolid)
 {
-    StopTimedSolidCycle();
-
-    bTimedSolidCurrentlySolid = false;
-
-    if (UWorld* World = GetWorld())
+    if (GetBehaviorForWorld(CurrentWorld) != EPlatformState::TimedSolid)
     {
-        const float Interval = FMath::Max(0.0f, TimedSolidInterval);
-        World->GetTimerManager().SetTimer(TimedSolidTimerHandle, this, &AShiftPlatform::HandleTimedSolidToggle, Interval, true, Interval);
-        HandleTimedSolidToggle();
-    }
-    else
-    {
-        ApplySolidState();
-    }
-}
-
-void AShiftPlatform::StopTimedSolidCycle()
-{
-    if (UWorld* World = GetWorld())
-    {
-        World->GetTimerManager().ClearTimer(TimedSolidTimerHandle);
-        World->GetTimerManager().ClearTimer(PreWarningTimerHandle);
+        return;
     }
 
-    bTimedSolidCurrentlySolid = false;
-}
-
-void AShiftPlatform::HandleTimedSolidToggle()
-{
-    if (UWorld* World = GetWorld())
-    {
-        World->GetTimerManager().ClearTimer(PreWarningTimerHandle);
-    }
-
-    bTimedSolidCurrentlySolid = !bTimedSolidCurrentlySolid;
-
-    OnPreWarningStart(CurrentWorld);
-
-    ApplyPreWarningState();
-
-    if (UWorld* World = GetWorld())
-    {
-        const float WarningDuration = FMath::Max(0.0f, PreWarningDuration);
-        World->GetTimerManager().SetTimer(PreWarningTimerHandle, this, &AShiftPlatform::CompleteTimedSolidToggle, WarningDuration, false);
-    }
-    else
-    {
-        CompleteTimedSolidToggle();
-    }
-}
-
-void AShiftPlatform::CompleteTimedSolidToggle()
-{
-    if (bTimedSolidCurrentlySolid)
+    if (bNowSolid)
     {
         ApplySolidState();
     }
@@ -232,6 +187,17 @@ void AShiftPlatform::CompleteTimedSolidToggle()
     {
         ApplyGhostState(CurrentWorld);
     }
+}
+
+void AShiftPlatform::OnGlobalTimedSolidPreWarning(bool bWillBeSolid)
+{
+    if (GetBehaviorForWorld(CurrentWorld) != EPlatformState::TimedSolid)
+    {
+        return;
+    }
+
+    ApplyPreWarningState();
+    OnPreWarningStarted(bWillBeSolid);
 }
 
 EPlatformState AShiftPlatform::GetBehaviorForWorld(EWorldState WorldContext) const
