@@ -95,16 +95,9 @@ void AShiftPlatform::ApplyPlatformState(EPlatformState NewState, EWorldState Wor
         ApplyHiddenState();
         break;
     case EPlatformState::TimedSolid:
-        if (WorldContext == EWorldState::Chaos)
+        if (CachedWorldManager.IsValid())
         {
-            if (CachedWorldManager.IsValid())
-            {
-                OnGlobalTimedSolidPhaseChanged(CachedWorldManager->IsGlobalTimedSolidSolid());
-            }
-            else
-            {
-                ApplySolidState();
-            }
+            OnGlobalTimedSolidPhaseChanged(CachedWorldManager->IsGlobalTimedSolidSolid());
         }
         else
         {
