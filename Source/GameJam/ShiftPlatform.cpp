@@ -18,9 +18,9 @@ AShiftPlatform::AShiftPlatform()
     PrefabType = EPlatformPrefabType::LightBridge;
 
     CurrentWorld = EWorldState::Light;
-    bTimedSolidCurrentlySolid = false;
-    TimedSolidInterval = 5.0f;
-    PreWarningDuration = 1.0f;
+    //bTimedSolidCurrentlySolid = false;
+    //TimedSolidInterval = 5.0f;
+    //PreWarningDuration = 1.0f;
 }
 
 void AShiftPlatform::OnConstruction(const FTransform& Transform)

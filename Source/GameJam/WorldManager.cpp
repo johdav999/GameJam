@@ -26,7 +26,7 @@ AWorldManager::AWorldManager()
     StartingWorld = EWorldState::Light;
     CurrentWorld = StartingWorld;
     MusicFadeTime = 0.5f;
-    CycleInterval = 2.0f;
+    CycleInterval = 5.0f;
     PreWarningTime = 1.0f;
     bGlobalTimedSolid = true;
 }
