@@ -11,10 +11,13 @@ class UAudioComponent;
 class UPostProcessComponent;
 class USoundBase;
 class USoundSubmix;
+struct FTimerHandle;
 
 /** Enum describing the three available world states. */
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldShifted, EWorldState, NewWorld);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimedSolidPhaseChanged, bool, bNowSolid);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimedSolidPreWarning, bool, bWillBeSolid);
 
 /**
  * Central manager responsible for tracking the active world and applying
@@ -55,6 +58,18 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "World Shift")
     FOnWorldShifted OnWorldShifted;
 
+    /** Broadcast when the global timed solid phase changes between solid and ghost. */
+    UPROPERTY(BlueprintAssignable, Category = "World Shift|Timed Solid")
+    FOnTimedSolidPhaseChanged OnTimedSolidPhaseChanged;
+
+    /** Broadcast shortly before the global timed solid phase flips. */
+    UPROPERTY(BlueprintAssignable, Category = "World Shift|Timed Solid")
+    FOnTimedSolidPreWarning OnTimedSolidPreWarning;
+
+    /** Returns whether the global timed solid state is currently solid. */
+    UFUNCTION(BlueprintPure, Category = "World Shift|Timed Solid")
+    bool IsGlobalTimedSolidSolid() const { return bGlobalTimedSolid; }
+
 
 
 protected:
@@ -69,6 +84,18 @@ protected:
 
     /** Applies audio snapshot for the supplied world. */
     void ApplyAudioForWorld(EWorldState NewWorld);
+
+    /** Handles the global timed solid toggle. */
+    void HandleGlobalTimedSolidToggle();
+
+    /** Broadcasts the upcoming timed solid phase. */
+    void BroadcastPreWarning();
+
+    /** Starts the global timed solid cycle timers. */
+    void StartGlobalTimedSolidCycle();
+
+    /** Stops the global timed solid cycle timers. */
+    void StopGlobalTimedSolidCycle();
 
 
 private:
@@ -112,6 +139,24 @@ private:
     /** Currently active world. */
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "World Shift", meta = (AllowPrivateAccess = "true"))
     EWorldState CurrentWorld;
+
+    /** Duration of each timed solid phase. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Timed Solid", meta = (AllowPrivateAccess = "true", ClampMin = "0.01"))
+    float CycleInterval;
+
+    /** Seconds before the phase change to broadcast the pre-warning. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Timed Solid", meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+    float PreWarningTime;
+
+    /** Tracks whether the global timed solid state is currently solid. */
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "World Shift|Timed Solid", meta = (AllowPrivateAccess = "true"))
+    bool bGlobalTimedSolid;
+
+    /** Handle for the repeating global timed solid timer. */
+    FTimerHandle GlobalTimedSolidHandle;
+
+    /** Handle for the pre-warning timer. */
+    FTimerHandle PreWarningHandle;
 
 };
 

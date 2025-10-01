@@ -9,7 +9,6 @@ class UStaticMeshComponent;
 class UWorldShiftComponent;
 class UMaterialInterface;
 class AWorldManager;
-struct FTimerHandle;
 
 UENUM(BlueprintType)
 enum class EPlatformState : uint8
@@ -69,14 +68,8 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
     TMap<EWorldState, TObjectPtr<UMaterialInterface>> GhostMaterials;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Timed Solid", meta = (ClampMin = "0.0"))
-    float TimedSolidInterval;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Timed Solid", meta = (ClampMin = "0.0"))
-    float PreWarningDuration;
-
     UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
-    void OnPreWarningStart(EWorldState WorldContext);
+    void OnPreWarningStarted(bool bWillBeSolid);
 
 private:
     UFUNCTION()
@@ -88,10 +81,11 @@ private:
     void ApplyHiddenState();
     void ApplyPreWarningState();
 
-    void StartTimedSolidCycle();
-    void StopTimedSolidCycle();
-    void HandleTimedSolidToggle();
-    void CompleteTimedSolidToggle();
+    UFUNCTION()
+    void OnGlobalTimedSolidPhaseChanged(bool bNowSolid);
+
+    UFUNCTION()
+    void OnGlobalTimedSolidPreWarning(bool bWillBeSolid);
 
     EPlatformState GetBehaviorForWorld(EWorldState WorldContext) const;
     void ApplyMaterial(UMaterialInterface* Material);
@@ -99,9 +93,5 @@ private:
 
     TWeakObjectPtr<AWorldManager> CachedWorldManager;
 
-    FTimerHandle TimedSolidTimerHandle;
-    FTimerHandle PreWarningTimerHandle;
-
     EWorldState CurrentWorld;
-    bool bTimedSolidCurrentlySolid;
 };
