@@ -20,6 +20,8 @@ AShiftPlatform::AShiftPlatform()
 
     CurrentWorld = EWorldState::Light;
     bTimedSolidCurrentlySolid = false;
+    TimedSolidInterval = 2.0f;
+    PreWarningDuration = 1.0f;
 }
 
 void AShiftPlatform::OnConstruction(const FTransform& Transform)
@@ -175,7 +177,8 @@ void AShiftPlatform::StartTimedSolidCycle()
 
     if (UWorld* World = GetWorld())
     {
-        World->GetTimerManager().SetTimer(TimedSolidTimerHandle, this, &AShiftPlatform::HandleTimedSolidToggle, 2.0f, true, 2.0f);
+        const float Interval = FMath::Max(0.0f, TimedSolidInterval);
+        World->GetTimerManager().SetTimer(TimedSolidTimerHandle, this, &AShiftPlatform::HandleTimedSolidToggle, Interval, true, Interval);
         HandleTimedSolidToggle();
     }
     else
@@ -210,7 +213,8 @@ void AShiftPlatform::HandleTimedSolidToggle()
 
     if (UWorld* World = GetWorld())
     {
-        World->GetTimerManager().SetTimer(PreWarningTimerHandle, this, &AShiftPlatform::CompleteTimedSolidToggle, 1.0f, false);
+        const float WarningDuration = FMath::Max(0.0f, PreWarningDuration);
+        World->GetTimerManager().SetTimer(PreWarningTimerHandle, this, &AShiftPlatform::CompleteTimedSolidToggle, WarningDuration, false);
     }
     else
     {

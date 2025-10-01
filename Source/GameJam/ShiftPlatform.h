@@ -69,6 +69,12 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
     TMap<EWorldState, TObjectPtr<UMaterialInterface>> GhostMaterials;
 
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Timed Solid", meta = (ClampMin = "0.0"))
+    float TimedSolidInterval;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Timed Solid", meta = (ClampMin = "0.0"))
+    float PreWarningDuration;
+
     UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
     void OnPreWarningStart(EWorldState WorldContext);
 
