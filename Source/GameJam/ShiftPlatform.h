@@ -50,6 +50,9 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UStaticMeshComponent> PlatformMesh;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Shift|Ghost Hint")
+    TObjectPtr<UStaticMeshComponent> GhostHintMesh;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Shift")
     TObjectPtr<UWorldShiftComponent> WorldShiftComponent;
 
@@ -67,6 +70,9 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
     TMap<EWorldState, TObjectPtr<UMaterialInterface>> GhostMaterials;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
+    TMap<EWorldState, TObjectPtr<UMaterialInterface>> GhostHintMaterials;
 
     UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
     void OnPreWarningStarted(bool bWillBeSolid);
@@ -90,6 +96,7 @@ private:
     EPlatformState GetBehaviorForWorld(EWorldState WorldContext) const;
     void ApplyMaterial(UMaterialInterface* Material);
     void InitializeWorldBehaviorsFromPrefab();
+    void UpdateGhostHint(EWorldState CurrentWorld);
 
     TWeakObjectPtr<AWorldManager> CachedWorldManager;
 

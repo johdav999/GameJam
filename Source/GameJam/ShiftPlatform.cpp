@@ -13,6 +13,13 @@ AShiftPlatform::AShiftPlatform()
     PlatformMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlatformMesh"));
     RootComponent = PlatformMesh;
 
+    GhostHintMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GhostHintMesh"));
+    GhostHintMesh->SetupAttachment(PlatformMesh);
+    GhostHintMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    GhostHintMesh->SetVisibility(false, true);
+    GhostHintMesh->SetHiddenInGame(true);
+    GhostHintMesh->SetRelativeTransform(FTransform::Identity);
+
     WorldShiftComponent = CreateDefaultSubobject<UWorldShiftComponent>(TEXT("WorldShiftComponent"));
 
     PrefabType = EPlatformPrefabType::LightBridge;
@@ -28,6 +35,8 @@ void AShiftPlatform::OnConstruction(const FTransform& Transform)
     Super::OnConstruction(Transform);
 
     InitializeWorldBehaviorsFromPrefab();
+
+    UpdateGhostHint(CurrentWorld);
 }
 
 void AShiftPlatform::BeginPlay()
@@ -69,6 +78,7 @@ void AShiftPlatform::HandleWorldShift(EWorldState NewWorld)
     const EPlatformState Behavior = GetBehaviorForWorld(NewWorld);
 
     ApplyPlatformState(Behavior, NewWorld);
+    UpdateGhostHint(NewWorld);
 }
 
 void AShiftPlatform::ApplyPlatformState(EPlatformState NewState, EWorldState WorldContext)
@@ -274,6 +284,47 @@ void AShiftPlatform::InitializeWorldBehaviorsFromPrefab()
         Configure(EPlatformState::Solid, EPlatformState::Ghost, EPlatformState::TimedSolid);
         break;
     }
+}
+
+void AShiftPlatform::UpdateGhostHint(EWorldState CurrentWorldState)
+{
+    if (!GhostHintMesh)
+    {
+        return;
+    }
+
+    const EPlatformState CurrentState = GetBehaviorForWorld(CurrentWorldState);
+    const bool bIsActiveInCurrentWorld = CurrentState == EPlatformState::Solid || CurrentState == EPlatformState::TimedSolid;
+    if (bIsActiveInCurrentWorld)
+    {
+        GhostHintMesh->SetVisibility(false, true);
+        GhostHintMesh->SetHiddenInGame(true);
+        return;
+    }
+
+    for (const TPair<EWorldState, EPlatformState>& Pair : WorldBehaviors)
+    {
+        if (Pair.Key == CurrentWorldState)
+        {
+            continue;
+        }
+
+        if (Pair.Value == EPlatformState::Solid || Pair.Value == EPlatformState::TimedSolid)
+        {
+            GhostHintMesh->SetVisibility(true, true);
+            GhostHintMesh->SetHiddenInGame(false);
+
+            if (UMaterialInterface* HintMaterial = GhostHintMaterials.FindRef(Pair.Key))
+            {
+                GhostHintMesh->SetMaterial(0, HintMaterial);
+            }
+
+            return;
+        }
+    }
+
+    GhostHintMesh->SetVisibility(false, true);
+    GhostHintMesh->SetHiddenInGame(true);
 }
 
 /*
