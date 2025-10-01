@@ -20,7 +20,7 @@ AShiftPlatform::AShiftPlatform()
 
     CurrentWorld = EWorldState::Light;
     bTimedSolidCurrentlySolid = false;
-    TimedSolidInterval = 2.0f;
+    TimedSolidInterval = 5.0f;
     PreWarningDuration = 1.0f;
 }
 
