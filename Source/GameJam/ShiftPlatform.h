@@ -6,9 +6,7 @@
 #include "ShiftPlatform.generated.h"
 
 class UStaticMeshComponent;
-class UWorldShiftComponent;
-class UMaterialInterface;
-class AWorldManager;
+class UWorldShiftBehaviorComponent;
 
 UENUM(BlueprintType)
 enum class EPlatformState : uint8
@@ -44,61 +42,13 @@ public:
 
 protected:
     virtual void OnConstruction(const FTransform& Transform) override;
-    virtual void BeginPlay() override;
-    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UStaticMeshComponent> PlatformMesh;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Shift|Ghost Hint")
-    TObjectPtr<UStaticMeshComponent> GhostHintMesh;
-
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World Shift")
-    TObjectPtr<UWorldShiftComponent> WorldShiftComponent;
+    TObjectPtr<UWorldShiftBehaviorComponent> WorldShiftBehavior;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "World Shift|Prefab")
     EPlatformPrefabType PrefabType;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift")
-    TMap<EWorldState, EPlatformState> WorldBehaviors;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
-    TObjectPtr<UMaterialInterface> SolidMaterial;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
-    TObjectPtr<UMaterialInterface> PreWarningMaterial;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
-    TMap<EWorldState, TObjectPtr<UMaterialInterface>> GhostMaterials;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Materials")
-    TMap<EWorldState, TObjectPtr<UMaterialInterface>> GhostHintMaterials;
-
-    UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
-    void OnPreWarningStarted(bool bWillBeSolid);
-
-private:
-    UFUNCTION()
-    void HandleWorldShift(EWorldState NewWorld);
-
-    void ApplyPlatformState(EPlatformState NewState, EWorldState WorldContext);
-    void ApplySolidState();
-    void ApplyGhostState(EWorldState WorldContext);
-    void ApplyHiddenState();
-    void ApplyPreWarningState();
-
-    UFUNCTION()
-    void OnGlobalTimedSolidPhaseChanged(bool bNowSolid);
-
-    UFUNCTION()
-    void OnGlobalTimedSolidPreWarning(bool bWillBeSolid);
-
-    EPlatformState GetBehaviorForWorld(EWorldState WorldContext) const;
-    void ApplyMaterial(UMaterialInterface* Material);
-    void InitializeWorldBehaviorsFromPrefab();
-    void UpdateGhostHint(EWorldState CurrentWorld);
-
-    TWeakObjectPtr<AWorldManager> CachedWorldManager;
-
-    EWorldState CurrentWorld;
 };
