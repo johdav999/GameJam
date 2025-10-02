@@ -8,19 +8,22 @@ public class GameJam : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] {
-			"Core",
-			"CoreUObject",
-			"Engine",
-			"InputCore",
-			"EnhancedInput",
-			"AIModule",
-			"StateTreeModule",
-			"GameplayStateTreeModule",
-			"UMG", "AudioMixer",
-
-            "Slate"
-		});
+                PublicDependencyModuleNames.AddRange(
+                        new string[]
+                        {
+                                "Core",
+                                "CoreUObject",
+                                "Engine",
+                                "InputCore",
+                                "EnhancedInput",
+                                "AIModule",
+                                "StateTreeModule",
+                                "GameplayStateTreeModule",
+                                "UMG",
+                                "AudioMixer",
+                                "Slate",
+                                "Niagara"
+                        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
