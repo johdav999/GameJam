@@ -15,6 +15,7 @@
 #include "Math/UnrealMathUtility.h"
 #include "GameJam.h"
 #include "WorldManager.h"
+#include "WorldShiftEffectsComponent.h"
 
 AGameJamCharacter::AGameJamCharacter()
 {
@@ -53,8 +54,29 @@ AGameJamCharacter::AGameJamCharacter()
         FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
         FollowCamera->bUsePawnControlRotation = false;
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+        // Create the world shift effects component responsible for audiovisual feedback
+        WorldShiftEffects = CreateDefaultSubobject<UWorldShiftEffectsComponent>(TEXT("WorldShiftEffects"));
+
+        // Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
+        // are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+}
+
+void AGameJamCharacter::BeginPlay()
+{
+        Super::BeginPlay();
+
+        if (!WorldShiftEffects)
+        {
+                return;
+        }
+
+        if (UWorld* World = GetWorld())
+        {
+                if (AWorldManager* Manager = AWorldManager::Get(World))
+                {
+                        Manager->OnWorldShifted.AddDynamic(WorldShiftEffects, &UWorldShiftEffectsComponent::TriggerWorldShiftEffects);
+                }
+        }
 }
 
 void AGameJamCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
