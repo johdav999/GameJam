@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
+class UWorldShiftEffectsComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -27,9 +28,13 @@ class AGameJamCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
 
-	/** Follow camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FollowCamera;
+        /** Follow camera */
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+        UCameraComponent* FollowCamera;
+
+        /** Handles audiovisual feedback when the world state changes */
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="World Shift", meta = (AllowPrivateAccess = "true"))
+        UWorldShiftEffectsComponent* WorldShiftEffects;
 	
 protected:
 
@@ -60,8 +65,10 @@ public:
 
 protected:
 
-	/** Initialize input action bindings */
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+        virtual void BeginPlay() override;
+
+        /** Initialize input action bindings */
+        virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 protected:
 
