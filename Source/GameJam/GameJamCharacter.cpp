@@ -134,14 +134,20 @@ void AGameJamCharacter::CycleWorld(const FInputActionValue& Value)
         {
                 if (AWorldManager* WorldManager = AWorldManager::Get(World))
                 {
+                        const int32 NumWorlds = static_cast<int32>(EWorldState::Chaos) + 1;
+                        int32 CurrentIndex = static_cast<int32>(WorldManager->GetCurrentWorld());
+
                         if (AxisValue > 0.0f)
                         {
-                                WorldManager->ShiftToNextWorld();
+                                CurrentIndex = (CurrentIndex + 1) % NumWorlds;
                         }
-                        else
+                        else if (AxisValue < 0.0f)
                         {
-                                WorldManager->ShiftToPreviousWorld();
+                                CurrentIndex = (CurrentIndex - 1 + NumWorlds) % NumWorlds;
                         }
+
+                        const EWorldState NewWorld = static_cast<EWorldState>(CurrentIndex);
+                        WorldManager->SetWorld(NewWorld);
                 }
         }
 }
