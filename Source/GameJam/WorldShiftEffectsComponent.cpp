@@ -53,6 +53,7 @@ void UWorldShiftEffectsComponent::TriggerWorldShiftEffects(EWorldState NewWorld)
             if (UWorld* World = GetWorld())
             {
                 UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, ParticleSystem, Owner->GetActorLocation(), Owner->GetActorRotation());
+              
             }
         }
     }
