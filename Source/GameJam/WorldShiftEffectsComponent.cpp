@@ -6,6 +6,7 @@
 #include "GameFramework/PlayerController.h"
 #include "HealthComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
@@ -52,8 +53,20 @@ void UWorldShiftEffectsComponent::TriggerWorldShiftEffects(EWorldState NewWorld)
         {
             if (UWorld* World = GetWorld())
             {
-                UNiagaraFunctionLibrary::SpawnSystemAtLocation(World, ParticleSystem, Owner->GetActorLocation(), Owner->GetActorRotation());
-              
+                UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+                    World,
+                    ParticleSystem,
+                    Owner->GetActorLocation(),
+                    Owner->GetActorRotation(),
+                    FVector(1.f),
+                    true,
+                    true,
+                    ENCPoolMethod::AutoRelease);
+
+                if (NiagaraComp)
+                {
+                    NiagaraComp->OnSystemFinished.AddDynamic(this, &UWorldShiftEffectsComponent::OnNiagaraEffectFinished);
+                }
             }
         }
     }
@@ -119,4 +132,14 @@ UHealthComponent* UWorldShiftEffectsComponent::FindHealthComponentOnOwner() cons
     }
 
     return nullptr;
+}
+
+void UWorldShiftEffectsComponent::OnNiagaraEffectFinished(UNiagaraComponent* FinishedComponent)
+{
+    if (!FinishedComponent)
+    {
+        return;
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("Niagara effect finished: %s"), *FinishedComponent->GetName());
 }
