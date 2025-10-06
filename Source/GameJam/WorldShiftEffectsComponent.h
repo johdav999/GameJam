@@ -8,6 +8,7 @@
 
 class UHealthComponent;
 class USoundBase;
+class UNiagaraComponent;
 class UNiagaraSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldShiftTriggered, EWorldState, NewWorld);
@@ -51,6 +52,9 @@ public:
     /** Triggers all configured effects for the provided world state. */
     UFUNCTION(BlueprintCallable, Category = "World Shift|Effects")
     void TriggerWorldShiftEffects(EWorldState NewWorld);
+
+    UFUNCTION()
+    void OnNiagaraEffectFinished(UNiagaraComponent* FinishedComponent);
 
 protected:
     virtual void BeginPlay() override;
