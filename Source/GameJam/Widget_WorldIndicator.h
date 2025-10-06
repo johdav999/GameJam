@@ -22,7 +22,7 @@ public:
     TArray<TObjectPtr<UTexture2D>> WorldIcons;
 
     /** Image widget that renders the selected world texture. */
-    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     TObjectPtr<UImage> WorldImage;
 
     /** Friendly names used as tooltips for each world state. */

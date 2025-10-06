@@ -17,10 +17,10 @@ class GAMEJAM_API UWidget_Layout : public UUserWidget
 
 public:
     /** Visual indicator for the currently active world. */
-    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     UWidget_WorldIndicator* WorldIndicator;
 
     /** Health display that reacts to damage inflicted by world shifts. */
-    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     UWidget_HealthBar* HealthBar;
 };
