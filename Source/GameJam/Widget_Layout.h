@@ -1,0 +1,26 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Blueprint/UserWidget.h"
+#include "Widget_Layout.generated.h"
+
+class UWidget_HealthBar;
+class UWidget_WorldIndicator;
+
+/**
+ * Root HUD layout widget that exposes references to key UI elements for blueprint wiring.
+ */
+UCLASS(Blueprintable)
+class GAMEJAM_API UWidget_Layout : public UUserWidget
+{
+    GENERATED_BODY()
+
+public:
+    /** Visual indicator for the currently active world. */
+    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    UWidget_WorldIndicator* WorldIndicator;
+
+    /** Health display that reacts to damage inflicted by world shifts. */
+    UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
+    UWidget_HealthBar* HealthBar;
+};
