@@ -4,87 +4,27 @@
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/PlayerController.h"
+#include "HealthComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraSystem.h"
 #include "Sound/SoundBase.h"
-#include "UObject/UnrealType.h"
-
-namespace
-{
-    /** Helper list of common function names used across health components for applying delta values. */
-    static const TArray<FName> ModifyHealthFunctionNames = {
-        TEXT("ModifyHealth"),
-        TEXT("ApplyHealthChange"),
-        TEXT("AdjustHealth"),
-        TEXT("ChangeHealth"),
-        TEXT("AddHealth"),
-        TEXT("ReduceHealth"),
-        TEXT("SubtractHealth"),
-        TEXT("ConsumeHealth"),
-        TEXT("SetHealthDelta"),
-        TEXT("SetHealthChange"),
-        TEXT("AdjustHitPoints")
-    };
-
-    /** Helper list of function names that typically inflict damage on health components. */
-    static const TArray<FName> DamageHealthFunctionNames = {
-        TEXT("TakeDamage"),
-        TEXT("DealDamage"),
-        TEXT("ApplyDamage"),
-        TEXT("InflictDamage"),
-        TEXT("ReceiveDamage")
-    };
-
-    /** Helper list of functions that return the current health value. */
-    static const TArray<FName> CurrentHealthFunctionNames = {
-        TEXT("GetCurrentHealth"),
-        TEXT("GetHealth"),
-        TEXT("GetHealthValue"),
-        TEXT("GetRemainingHealth"),
-        TEXT("GetHealthPoints"),
-        TEXT("GetCurrentHP"),
-        TEXT("GetHP")
-    };
-
-    /** Helper list of functions that return the maximum health value. */
-    static const TArray<FName> MaxHealthFunctionNames = {
-        TEXT("GetMaxHealth"),
-        TEXT("GetMaximumHealth"),
-        TEXT("GetHealthCapacity"),
-        TEXT("GetTotalHealth"),
-        TEXT("GetMaxHP"),
-        TEXT("GetHPMax")
-    };
-
-    /** Helper list of common property names storing current health. */
-    static const TArray<FName> CurrentHealthPropertyNames = {
-        TEXT("CurrentHealth"),
-        TEXT("Health"),
-        TEXT("HealthValue"),
-        TEXT("RemainingHealth"),
-        TEXT("HealthPoints"),
-        TEXT("CurrentHP"),
-        TEXT("HP")
-    };
-
-    /** Helper list of common property names storing maximum health. */
-    static const TArray<FName> MaxHealthPropertyNames = {
-        TEXT("MaxHealth"),
-        TEXT("MaximumHealth"),
-        TEXT("HealthCapacity"),
-        TEXT("TotalHealth"),
-        TEXT("MaxHP"),
-        TEXT("HPMax")
-    };
-}
 
 UWorldShiftEffectsComponent::UWorldShiftEffectsComponent()
 {
     PrimaryComponentTick.bCanEverTick = false;
 
-    HealthCostPerSwitch = 5.0f;
     PostProcessBlendDuration = 0.35f;
+}
+
+void UWorldShiftEffectsComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    if (!HealthComponent)
+    {
+        HealthComponent = FindHealthComponentOnOwner();
+    }
 }
 
 void UWorldShiftEffectsComponent::TriggerWorldShiftEffects(EWorldState NewWorld)
@@ -155,181 +95,27 @@ bool UWorldShiftEffectsComponent::ApplyHealthCost(float& OutNewHealth, float& Ou
         return false;
     }
 
-    UActorComponent* HealthComponent = ResolveHealthComponent();
-    if (!HealthComponent)
+    UHealthComponent* HealthComp = HealthComponent ? HealthComponent.Get() : FindHealthComponentOnOwner();
+    if (!HealthComp)
     {
         return false;
     }
 
-    const float Delta = -FMath::Abs(HealthCostPerSwitch);
-    bool bHealthModified = TryInvokeHealthDelta(HealthComponent, Delta);
+    const float Damage = FMath::Abs(HealthCostPerSwitch);
+    const bool bChanged = HealthComp->ApplyDamage(Damage);
 
-    if (!bHealthModified)
-    {
-        for (const FName& PropertyName : CurrentHealthPropertyNames)
-        {
-            if (FProperty* Property = HealthComponent->GetClass()->FindPropertyByName(PropertyName))
-            {
-                if (FFloatProperty* FloatProperty = CastField<FFloatProperty>(Property))
-                {
-                    float CurrentValue = FloatProperty->GetPropertyValue_InContainer(HealthComponent);
-                    const float NewValue = FMath::Max(0.0f, CurrentValue + Delta);
-                    FloatProperty->SetPropertyValue_InContainer(HealthComponent, NewValue);
-                    bHealthModified = true;
-                    break;
-                }
-            }
-        }
-    }
+    OutNewHealth = HealthComp->GetHealth();
+    OutMaxHealth = HealthComp->GetMaxHealth();
 
-    if (!bHealthModified)
-    {
-        return false;
-    }
-
-    TryGetHealthValues(HealthComponent, OutNewHealth, OutMaxHealth);
-    return true;
+    return bChanged;
 }
 
-UActorComponent* UWorldShiftEffectsComponent::ResolveHealthComponent() const
+UHealthComponent* UWorldShiftEffectsComponent::FindHealthComponentOnOwner() const
 {
-    const AActor* Owner = GetOwner();
-    if (!Owner)
+    if (const AActor* Owner = GetOwner())
     {
-        return nullptr;
-    }
-
-    TArray<UActorComponent*> Components;
-    Owner->GetComponents(Components);
-    for (UActorComponent* Component : Components)
-    {
-        if (!Component)
-        {
-            continue;
-        }
-
-        const FString ComponentName = Component->GetName();
-        const FString ClassName = Component->GetClass()->GetName();
-
-        if (ComponentName.Contains(TEXT("Health"), ESearchCase::IgnoreCase) || ClassName.Contains(TEXT("Health"), ESearchCase::IgnoreCase))
-        {
-            return Component;
-        }
+        return Owner->FindComponentByClass<UHealthComponent>();
     }
 
     return nullptr;
-}
-
-bool UWorldShiftEffectsComponent::TryInvokeHealthDelta(UActorComponent* HealthComponent, float Delta) const
-{
-    if (!HealthComponent)
-    {
-        return false;
-    }
-
-    struct FSingleFloatParam
-    {
-        float Amount;
-    };
-
-    const auto InvokeWithValue = [HealthComponent](const TArray<FName>& FunctionNames, float Value) -> bool
-    {
-        for (const FName& FunctionName : FunctionNames)
-        {
-            if (UFunction* Function = HealthComponent->FindFunction(FunctionName))
-            {
-                FSingleFloatParam Params{Value};
-                HealthComponent->ProcessEvent(Function, &Params);
-                return true;
-            }
-        }
-        return false;
-    };
-
-    if (InvokeWithValue(ModifyHealthFunctionNames, Delta))
-    {
-        return true;
-    }
-
-    if (InvokeWithValue(DamageHealthFunctionNames, -Delta))
-    {
-        return true;
-    }
-
-    return false;
-}
-
-bool UWorldShiftEffectsComponent::TryGetHealthValues(UActorComponent* HealthComponent, float& OutCurrentHealth, float& OutMaxHealth) const
-{
-    bool bHasCurrent = TryGetHealthValueFromFunction(HealthComponent, CurrentHealthFunctionNames, OutCurrentHealth) ||
-                       TryGetHealthValueFromProperty(HealthComponent, CurrentHealthPropertyNames, OutCurrentHealth);
-
-    bool bHasMax = TryGetHealthValueFromFunction(HealthComponent, MaxHealthFunctionNames, OutMaxHealth) ||
-                   TryGetHealthValueFromProperty(HealthComponent, MaxHealthPropertyNames, OutMaxHealth);
-
-    if (!bHasMax)
-    {
-        // If we cannot find a max health value, fall back to current health as both values to keep UI stable.
-        OutMaxHealth = OutCurrentHealth;
-    }
-
-    if (!bHasCurrent)
-    {
-        OutCurrentHealth = 0.0f;
-    }
-
-    return bHasCurrent || bHasMax;
-}
-
-bool UWorldShiftEffectsComponent::TryGetHealthValueFromFunction(UActorComponent* HealthComponent, const TArray<FName>& FunctionNames, float& OutValue) const
-{
-    if (!HealthComponent)
-    {
-        return false;
-    }
-
-    for (const FName& FunctionName : FunctionNames)
-    {
-        if (UFunction* Function = HealthComponent->FindFunction(FunctionName))
-        {
-            if (Function->NumParms == 0 && Function->ParmsSize == 0)
-            {
-                if (CastField<FFloatProperty>(Function->GetReturnProperty()) != nullptr)
-                {
-                    struct FFloatReturn
-                    {
-                        float ReturnValue;
-                    } Params{0.0f};
-
-                    HealthComponent->ProcessEvent(Function, &Params);
-                    OutValue = Params.ReturnValue;
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
-bool UWorldShiftEffectsComponent::TryGetHealthValueFromProperty(UActorComponent* HealthComponent, const TArray<FName>& PropertyNames, float& OutValue) const
-{
-    if (!HealthComponent)
-    {
-        return false;
-    }
-
-    for (const FName& PropertyName : PropertyNames)
-    {
-        if (FProperty* Property = HealthComponent->GetClass()->FindPropertyByName(PropertyName))
-        {
-            if (FFloatProperty* FloatProperty = CastField<FFloatProperty>(Property))
-            {
-                OutValue = FloatProperty->GetPropertyValue_InContainer(HealthComponent);
-                return true;
-            }
-        }
-    }
-
-    return false;
 }
