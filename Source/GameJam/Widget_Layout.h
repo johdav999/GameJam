@@ -27,11 +27,11 @@ public:
 
     /** Blueprint-assigned class responsible for rendering world widgets. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="World")
-    TSubclassOf<class UWorldWidget> WorldWidgetClass;
+    TSubclassOf<class UWidget_WorldIndicator> WorldWidgetClass;
 
     /** Instance of the world widget spawned at runtime. */
     UPROPERTY(BlueprintReadWrite)
-    TObjectPtr<UWorldWidget> WorldWidgetInstance;
+    TObjectPtr<UWidget_WorldIndicator> WorldWidgetInstance;
 
     virtual void NativeConstruct() override;
 };
