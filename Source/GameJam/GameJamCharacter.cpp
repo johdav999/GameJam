@@ -16,6 +16,7 @@
 #include "GameJam.h"
 #include "WorldManager.h"
 #include "WorldShiftEffectsComponent.h"
+#include "HealthComponent.h"
 
 AGameJamCharacter::AGameJamCharacter()
 {
@@ -57,6 +58,9 @@ AGameJamCharacter::AGameJamCharacter()
         // Create the world shift effects component responsible for audiovisual feedback
         WorldShiftEffects = CreateDefaultSubobject<UWorldShiftEffectsComponent>(TEXT("WorldShiftEffects"));
 
+        // Create the health component responsible for managing player health
+        HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
         // Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
         // are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
@@ -65,16 +69,16 @@ void AGameJamCharacter::BeginPlay()
 {
         Super::BeginPlay();
 
-        if (!WorldShiftEffects)
-        {
-                return;
-        }
-
         if (UWorld* World = GetWorld())
         {
                 if (AWorldManager* Manager = AWorldManager::Get(World))
                 {
-                        Manager->OnWorldShifted.AddDynamic(WorldShiftEffects, &UWorldShiftEffectsComponent::TriggerWorldShiftEffects);
+                        if (WorldShiftEffects)
+                        {
+                                Manager->OnWorldShifted.AddDynamic(WorldShiftEffects, &UWorldShiftEffectsComponent::TriggerWorldShiftEffects);
+                        }
+
+                        Manager->OnWorldShifted.AddDynamic(this, &AGameJamCharacter::HandleWorldShifted);
                 }
         }
 }
@@ -149,6 +153,21 @@ void AGameJamCharacter::CycleWorld(const FInputActionValue& Value)
                         const EWorldState NewWorld = static_cast<EWorldState>(CurrentIndex);
                         WorldManager->SetWorld(NewWorld);
                 }
+        }
+}
+
+void AGameJamCharacter::HandleWorldShifted(EWorldState NewWorld)
+{
+        if (!bReceivedInitialWorldNotification)
+        {
+                bReceivedInitialWorldNotification = true;
+                return;
+        }
+
+        if (HealthComponent)
+        {
+                constexpr float WorldShiftPenalty = 10.0f;
+                HealthComponent->ApplyDamage(WorldShiftPenalty);
         }
 }
 

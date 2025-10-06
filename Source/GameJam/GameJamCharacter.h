@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "WorldShiftTypes.h"
 #include "GameJamCharacter.generated.h"
 
 class USpringArmComponent;
@@ -12,6 +13,7 @@ class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
 class UWorldShiftEffectsComponent;
+class UHealthComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -35,6 +37,10 @@ class AGameJamCharacter : public ACharacter
         /** Handles audiovisual feedback when the world state changes */
         UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="World Shift", meta = (AllowPrivateAccess = "true"))
         UWorldShiftEffectsComponent* WorldShiftEffects;
+
+        /** Handles player health state and broadcasts updates */
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+        UHealthComponent* HealthComponent;
 	
 protected:
 
@@ -81,6 +87,10 @@ protected:
         /** Cycles through the available world states. */
         void CycleWorld(const FInputActionValue& Value);
 
+        /** Applies the health penalty whenever the active world changes. */
+        UFUNCTION()
+        void HandleWorldShifted(EWorldState NewWorld);
+
 public:
 
 	/** Handles move inputs from either controls or UI interfaces */
@@ -104,7 +114,14 @@ public:
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+        /** Returns FollowCamera subobject **/
+        FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+        /** Returns HealthComponent subobject **/
+        FORCEINLINE class UHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
+private:
+        /** Tracks whether the initial world state notification has been received. */
+        bool bReceivedInitialWorldNotification = false;
 };
 
