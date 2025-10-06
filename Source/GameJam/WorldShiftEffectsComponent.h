@@ -2,14 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "HealthComponent.h"
 #include "WorldShiftTypes.h"
 #include "WorldShiftEffectsComponent.generated.h"
 
+class UHealthComponent;
 class USoundBase;
 class UNiagaraSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldShiftTriggered, EWorldState, NewWorld);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWorldShiftHealthDrained, float, NewHealth, float, MaxHealth);
 
 /**
  * Component responsible for orchestrating audiovisual feedback and gameplay side-effects when the player
@@ -23,9 +24,13 @@ class GAMEJAM_API UWorldShiftEffectsComponent : public UActorComponent
 public:
     UWorldShiftEffectsComponent();
 
+    /** Prefer explicit binding in editor/Blueprint. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health")
+    TObjectPtr<UHealthComponent> HealthComponent = nullptr;
+
     /** Health cost applied every time the player performs a world shift. */
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Cost")
-    float HealthCostPerSwitch;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health")
+    float HealthCostPerSwitch = 5.f;
 
     /** Audio cues to play when shifting into a specific world. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Audio")
@@ -48,6 +53,8 @@ public:
     void TriggerWorldShiftEffects(EWorldState NewWorld);
 
 protected:
+    virtual void BeginPlay() override;
+
     /** Starts a short-lived post process flash that fades away over time. */
     UFUNCTION(BlueprintCallable, Category = "World Shift|Effects")
     void StartPostProcessFlash(FLinearColor FlashColor);
@@ -62,14 +69,11 @@ public:
     FOnWorldShiftTriggered OnWorldShiftTriggered;
 
     /** Event fired after health has been drained by a world shift. */
-    UPROPERTY(BlueprintAssignable, Category = "World Shift|Events")
-    FOnWorldShiftHealthDrained OnHealthDrained;
+    UPROPERTY(BlueprintAssignable, Category = "Health")
+    FOnHealthChanged OnHealthDrained;
 
 private:
     bool ApplyHealthCost(float& OutNewHealth, float& OutMaxHealth);
-    UActorComponent* ResolveHealthComponent() const;
-    bool TryInvokeHealthDelta(UActorComponent* HealthComponent, float Delta) const;
-    bool TryGetHealthValues(UActorComponent* HealthComponent, float& OutCurrentHealth, float& OutMaxHealth) const;
-    bool TryGetHealthValueFromFunction(UActorComponent* HealthComponent, const TArray<FName>& FunctionNames, float& OutValue) const;
-    bool TryGetHealthValueFromProperty(UActorComponent* HealthComponent, const TArray<FName>& PropertyNames, float& OutValue) const;
+
+    UHealthComponent* FindHealthComponentOnOwner() const;
 };
