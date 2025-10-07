@@ -64,4 +64,5 @@ private:
     bool bHasInitialized;
 
     TWeakObjectPtr<AWorldManager> CachedWorldManager;
+    FRotator InitialDoorRotation;
 };
