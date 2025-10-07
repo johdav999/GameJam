@@ -26,6 +26,7 @@ AWorldDoor::AWorldDoor()
     bAnimateOnToggle = true;
     bIsCurrentlySolid = true;
     bHasInitialized = false;
+    InitialDoorRotation = FRotator::ZeroRotator;
 
     SolidInWorlds = {EWorldState::Light};
 }
@@ -33,6 +34,11 @@ AWorldDoor::AWorldDoor()
 void AWorldDoor::BeginPlay()
 {
     Super::BeginPlay();
+
+    if (DoorMesh)
+    {
+        InitialDoorRotation = DoorMesh->GetRelativeRotation();
+    }
 
     InitializeWorldBehaviors();
 
@@ -100,7 +106,7 @@ void AWorldDoor::PlayDoorAnimation(bool bOpening)
         return;
     }
 
-    const FRotator TargetRotation = bOpening ? FRotator(0.f, 90.f, 0.f) : FRotator::ZeroRotator;
+    const FRotator TargetRotation = bOpening ? (InitialDoorRotation + FRotator(0.f, 90.f, 0.f)) : InitialDoorRotation;
     DoorMesh->SetRelativeRotation(TargetRotation);
 }
 
