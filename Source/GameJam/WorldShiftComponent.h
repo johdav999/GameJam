@@ -7,6 +7,8 @@
 
 class AWorldManager;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldShiftComponentSignature, EWorldState, NewWorld);
+
 UCLASS(ClassGroup = (WorldShift), meta = (BlueprintSpawnableComponent))
 class GAMEJAM_API UWorldShiftComponent : public UActorComponent
 {
@@ -18,8 +20,12 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift")
     TArray<EWorldState> VisibleInWorlds;
 
+    /** Broadcast when the world shifts. */
+    UPROPERTY(BlueprintAssignable, Category = "World Shift")
+    FOnWorldShiftComponentSignature OnWorldShifted;
+
     UFUNCTION(BlueprintCallable, Category = "World Shift")
-    void OnWorldShift(EWorldState NewWorld);
+    virtual void OnWorldShift(EWorldState NewWorld);
 
 protected:
     virtual void OnRegister() override;
