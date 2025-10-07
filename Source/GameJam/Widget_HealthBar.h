@@ -23,3 +23,4 @@ public:
     UFUNCTION(BlueprintCallable)
     void UpdateHealth(float NewHealth, float MaxHealth);
 };
+
