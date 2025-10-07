@@ -6,8 +6,9 @@
 #include "WorldDoor.generated.h"
 
 class UStaticMeshComponent;
-class UWorldShiftComponent;
+class UWorldShiftBehaviorComponent;
 class USoundBase;
+class AWorldManager;
 
 /**
  * Actor representing a world-dependent door that toggles visibility and collision
@@ -23,6 +24,7 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
     /** Mesh for the door */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -30,7 +32,7 @@ protected:
 
     /** World-shift behavior component */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-    TObjectPtr<UWorldShiftComponent> WorldShiftComponent;
+    TObjectPtr<UWorldShiftBehaviorComponent> WorldShiftBehavior;
 
     /** Optional sound when door opens */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio")
@@ -40,9 +42,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio")
     TObjectPtr<USoundBase> CloseSound;
 
-    /** Worlds where the door should be visible and solid */
+    /** Worlds where the door should be solid (impassable). Other worlds will be passable. */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "World")
-    TArray<EWorldState> VisibleInWorlds;
+    TArray<EWorldState> SolidInWorlds;
 
     /** Whether the door should auto-play open/close animation on toggle */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door Behavior")
@@ -52,9 +54,14 @@ private:
     UFUNCTION()
     void HandleWorldShift(EWorldState NewWorld);
 
-    void SetDoorState(bool bShouldBeVisible);
+    void SetDoorState(bool bShouldBeSolid);
     void PlayDoorAnimation(bool bOpening);
 
-    bool bIsCurrentlyVisible;
+    bool IsSolidInWorld(EWorldState World) const;
+    void InitializeWorldBehaviors();
+
+    bool bIsCurrentlySolid;
     bool bHasInitialized;
+
+    TWeakObjectPtr<AWorldManager> CachedWorldManager;
 };
