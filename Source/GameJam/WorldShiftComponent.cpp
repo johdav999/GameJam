@@ -63,5 +63,5 @@ void UWorldShiftComponent::HandleWorldShift(EWorldState NewWorld)
 }
 void UWorldShiftComponent::OnWorldShift(EWorldState NewWorld)
 {
-
+    OnWorldShifted.Broadcast(NewWorld);
 }
