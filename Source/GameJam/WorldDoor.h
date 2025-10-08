@@ -2,18 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "WorldShiftTypes.h"
+#include "WorldState.h"
 #include "WorldDoor.generated.h"
 
 class UStaticMeshComponent;
 class UWorldShiftBehaviorComponent;
 class USoundBase;
-class AWorldManager;
 
-/**
- * Actor representing a world-dependent door that toggles visibility and collision
- * when the active world changes.
- */
 UCLASS()
 class GAMEJAM_API AWorldDoor : public AActor
 {
@@ -26,43 +21,27 @@ protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-    /** Mesh for the door */
+    /** Door mesh */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UStaticMeshComponent> DoorMesh;
 
-    /** World-shift behavior component */
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    /** Handles world state (Solid, Ghost, Hidden) */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "World")
     TObjectPtr<UWorldShiftBehaviorComponent> WorldShiftBehavior;
 
-    /** Optional sound when door opens */
+    /** Optional open/close sounds */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio")
-    TObjectPtr<USoundBase> OpenSound;
-
-    /** Optional sound when door closes */
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio")
-    TObjectPtr<USoundBase> CloseSound;
-
-    /** Worlds where the door should be solid (impassable). Other worlds will be passable. */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "World")
-    TArray<EWorldState> SolidInWorlds;
-
-    /** Whether the door should auto-play open/close animation on toggle */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Door Behavior")
-    bool bAnimateOnToggle;
+    TObjectPtr<USoundBase> DoorSound;
 
 private:
+    /** Respond to world-state changes */
     UFUNCTION()
-    void HandleWorldShift(EWorldState NewWorld);
+    void OnWorldStateChanged(EWorldMaterialState NewState);
 
-    void SetDoorState(bool bShouldBeSolid);
-    void PlayDoorAnimation(bool bOpening);
+    /** Internal helper to update collision/visibility */
+    void UpdateDoorState(EWorldMaterialState NewState);
 
-    bool IsSolidInWorld(EWorldState World) const;
-    void InitializeWorldBehaviors();
-
-    bool bIsCurrentlySolid;
-    bool bHasInitialized;
-
-    TWeakObjectPtr<AWorldManager> CachedWorldManager;
-    FRotator InitialDoorRotation;
+    /** Tracks the previously applied material state to drive audio cues. */
+    EWorldMaterialState LastAppliedState;
 };
+

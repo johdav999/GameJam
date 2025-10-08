@@ -1,11 +1,9 @@
 #include "WorldDoor.h"
 
-#include "ShiftPlatform.h"
-#include "WorldManager.h"
-#include "WorldShiftBehaviorComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "WorldShiftBehaviorComponent.h"
 
 AWorldDoor::AWorldDoor()
 {
@@ -14,133 +12,77 @@ AWorldDoor::AWorldDoor()
     DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
     RootComponent = DoorMesh;
 
-    WorldShiftBehavior = CreateDefaultSubobject<UWorldShiftBehaviorComponent>(TEXT("WorldShiftBehavior"));
-    if (WorldShiftBehavior)
-    {
-        WorldShiftBehavior->SetTargetMesh(DoorMesh);
-    }
-
     DoorMesh->SetCollisionProfileName(TEXT("BlockAll"));
+    DoorMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
     DoorMesh->SetGenerateOverlapEvents(false);
+    DoorMesh->SetHiddenInGame(false);
 
-    bAnimateOnToggle = true;
-    bIsCurrentlySolid = true;
-    bHasInitialized = false;
-    InitialDoorRotation = FRotator::ZeroRotator;
+    WorldShiftBehavior = CreateDefaultSubobject<UWorldShiftBehaviorComponent>(TEXT("WorldShiftBehavior"));
 
-    SolidInWorlds = {EWorldState::Light};
+    LastAppliedState = EWorldMaterialState::Solid;
 }
 
 void AWorldDoor::BeginPlay()
 {
     Super::BeginPlay();
 
-    if (DoorMesh)
+    if (WorldShiftBehavior)
     {
-        InitialDoorRotation = DoorMesh->GetRelativeRotation();
-    }
-
-    InitializeWorldBehaviors();
-
-    if (AWorldManager* Manager = AWorldManager::Get(GetWorld()))
-    {
-        CachedWorldManager = Manager;
-        Manager->OnWorldShifted.AddDynamic(this, &AWorldDoor::HandleWorldShift);
-        HandleWorldShift(Manager->GetCurrentWorld());
+        WorldShiftBehavior->SetTargetMesh(DoorMesh);
+        WorldShiftBehavior->OnMaterialStateChanged.AddDynamic(this, &AWorldDoor::OnWorldStateChanged);
+        UpdateDoorState(WorldShiftBehavior->GetCurrentMaterialState());
     }
     else
     {
-        SetDoorState(IsSolidInWorld(EWorldState::Light));
+        UpdateDoorState(EWorldMaterialState::Solid);
     }
 }
 
 void AWorldDoor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    if (CachedWorldManager.IsValid())
+    if (WorldShiftBehavior)
     {
-        if (AWorldManager* Manager = CachedWorldManager.Get())
-        {
-            Manager->OnWorldShifted.RemoveDynamic(this, &AWorldDoor::HandleWorldShift);
-        }
-
-        CachedWorldManager.Reset();
+        WorldShiftBehavior->OnMaterialStateChanged.RemoveDynamic(this, &AWorldDoor::OnWorldStateChanged);
     }
 
     Super::EndPlay(EndPlayReason);
 }
 
-void AWorldDoor::HandleWorldShift(EWorldState NewWorld)
+void AWorldDoor::OnWorldStateChanged(EWorldMaterialState NewState)
 {
-    SetDoorState(IsSolidInWorld(NewWorld));
+    UpdateDoorState(NewState);
 }
 
-void AWorldDoor::SetDoorState(bool bShouldBeSolid)
-{
-    if (bHasInitialized && bIsCurrentlySolid == bShouldBeSolid)
-    {
-        return;
-    }
-
-    bHasInitialized = true;
-    bIsCurrentlySolid = bShouldBeSolid;
-
-    if (bAnimateOnToggle)
-    {
-        PlayDoorAnimation(!bShouldBeSolid);
-    }
-
-    if (!bShouldBeSolid && OpenSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, OpenSound, GetActorLocation());
-    }
-    else if (bShouldBeSolid && CloseSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, CloseSound, GetActorLocation());
-    }
-}
-
-void AWorldDoor::PlayDoorAnimation(bool bOpening)
+void AWorldDoor::UpdateDoorState(EWorldMaterialState NewState)
 {
     if (!DoorMesh)
     {
         return;
     }
 
-    const FRotator TargetRotation = bOpening ? (InitialDoorRotation + FRotator(0.f, 90.f, 0.f)) : InitialDoorRotation;
-    DoorMesh->SetRelativeRotation(TargetRotation);
+    switch (NewState)
+    {
+    case EWorldMaterialState::Solid:
+        DoorMesh->SetHiddenInGame(false);
+        DoorMesh->SetVisibility(true, true);
+        DoorMesh->SetCollisionProfileName(TEXT("BlockAll"));
+        DoorMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+        break;
+
+    case EWorldMaterialState::Ghost:
+    case EWorldMaterialState::Hidden:
+    default:
+        DoorMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        DoorMesh->SetVisibility(false, true);
+        DoorMesh->SetHiddenInGame(true);
+        break;
+    }
+
+    if (DoorSound && LastAppliedState != NewState)
+    {
+        UGameplayStatics::PlaySoundAtLocation(this, DoorSound, GetActorLocation());
+    }
+
+    LastAppliedState = NewState;
 }
 
-bool AWorldDoor::IsSolidInWorld(EWorldState World) const
-{
-    if (WorldShiftBehavior)
-    {
-        if (const EPlatformState* FoundState = WorldShiftBehavior->WorldBehaviors.Find(World))
-        {
-            return *FoundState == EPlatformState::Solid || *FoundState == EPlatformState::TimedSolid;
-        }
-    }
-
-    return SolidInWorlds.Contains(World);
-}
-
-void AWorldDoor::InitializeWorldBehaviors()
-{
-    if (!WorldShiftBehavior)
-    {
-        return;
-    }
-
-    WorldShiftBehavior->SetTargetMesh(DoorMesh);
-
-    if (WorldShiftBehavior->WorldBehaviors.Num() > 0)
-    {
-        return;
-    }
-
-    const TArray<EWorldState> AllWorlds = {EWorldState::Light, EWorldState::Shadow, EWorldState::Chaos};
-    for (EWorldState World : AllWorlds)
-    {
-        const bool bSolid = SolidInWorlds.Contains(World);
-        WorldShiftBehavior->WorldBehaviors.Add(World, bSolid ? EPlatformState::Solid : EPlatformState::Ghost);
-    }
-}

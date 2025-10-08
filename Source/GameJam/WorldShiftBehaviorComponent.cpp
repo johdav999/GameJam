@@ -11,6 +11,7 @@ UWorldShiftBehaviorComponent::UWorldShiftBehaviorComponent()
 
     CurrentWorld = EWorldState::Light;
     CurrentState = EPlatformState::Solid;
+    CurrentMaterialState = EWorldMaterialState::Solid;
 }
 
 void UWorldShiftBehaviorComponent::SetTargetMesh(UStaticMeshComponent* InMesh)
@@ -180,6 +181,7 @@ void UWorldShiftBehaviorComponent::HandleWorldShift(EWorldState NewWorld)
     ApplyPlatformState(NewState, NewWorld);
     UpdateGhostHint(NewWorld);
     CurrentState = NewState;
+    BroadcastMaterialState(ResolveMaterialState(NewState));
     OnShiftStateChanged(NewState, NewWorld);
 }
 
@@ -198,6 +200,8 @@ void UWorldShiftBehaviorComponent::HandleGlobalTimedSolidPhaseChanged(bool bNowS
     {
         ApplyGhostState(CurrentWorld);
     }
+
+    BroadcastMaterialState(bNowSolid ? EWorldMaterialState::Solid : EWorldMaterialState::Ghost);
 }
 
 void UWorldShiftBehaviorComponent::HandleGlobalTimedSolidPreWarning(bool bWillBeSolid)
@@ -369,4 +373,31 @@ EPlatformState UWorldShiftBehaviorComponent::GetBehaviorForWorld(EWorldState Wor
     }
 
     return EPlatformState::Solid;
+}
+
+void UWorldShiftBehaviorComponent::BroadcastMaterialState(EWorldMaterialState NewState)
+{
+    CurrentMaterialState = NewState;
+    OnMaterialStateChanged.Broadcast(NewState);
+}
+
+EWorldMaterialState UWorldShiftBehaviorComponent::ResolveMaterialState(EPlatformState PlatformState) const
+{
+    switch (PlatformState)
+    {
+    case EPlatformState::Solid:
+        return EWorldMaterialState::Solid;
+    case EPlatformState::Ghost:
+        return EWorldMaterialState::Ghost;
+    case EPlatformState::Hidden:
+        return EWorldMaterialState::Hidden;
+    case EPlatformState::TimedSolid:
+        if (CachedWorldManager.IsValid())
+        {
+            return CachedWorldManager->IsGlobalTimedSolidSolid() ? EWorldMaterialState::Solid : EWorldMaterialState::Ghost;
+        }
+        return EWorldMaterialState::Solid;
+    default:
+        return EWorldMaterialState::Solid;
+    }
 }

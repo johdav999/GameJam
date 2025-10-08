@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "WorldShiftTypes.h"
+#include "WorldState.h"
 #include "WorldShiftBehaviorComponent.generated.h"
 
 class UStaticMeshComponent;
@@ -10,6 +11,8 @@ class UMaterialInterface;
 class AWorldManager;
 enum class EPlatformPrefabType : uint8;
 enum class EPlatformState : uint8;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldShiftMaterialStateChanged, EWorldMaterialState, NewState);
 
 /**
  * Component that applies world shift behavior to an owning actor.
@@ -60,6 +63,10 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "World Shift")
     EPlatformState CurrentState;
 
+    /** Accessor to the current material state tracked by the component. */
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "World Shift")
+    EWorldMaterialState CurrentMaterialState;
+
     /** Assigns the mesh that should receive visibility/material updates. */
     void SetTargetMesh(UStaticMeshComponent* InMesh);
 
@@ -78,6 +85,14 @@ public:
     /** Blueprint hook fired when the platform state changes. */
     UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
     void OnShiftStateChanged(EPlatformState NewState, EWorldState WorldContext);
+
+    /** Native event fired when the material/collision state changes. */
+    UPROPERTY(BlueprintAssignable, Category = "World Shift|Events")
+    FOnWorldShiftMaterialStateChanged OnMaterialStateChanged;
+
+    /** Returns the current material state the component represents. */
+    UFUNCTION(BlueprintPure, Category = "World Shift")
+    EWorldMaterialState GetCurrentMaterialState() const { return CurrentMaterialState; }
 
     /** Blueprint hook fired when the pre-warning window begins. */
     UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
@@ -111,6 +126,9 @@ private:
     void ApplyHiddenState();
     void ApplyPreWarningState();
     void ApplyMaterial(UMaterialInterface* Material) const;
+
+    void BroadcastMaterialState(EWorldMaterialState NewState);
+    EWorldMaterialState ResolveMaterialState(EPlatformState PlatformState) const;
 
     void UpdateGhostHint(EWorldState WorldContext);
 
