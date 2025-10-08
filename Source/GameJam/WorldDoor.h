@@ -54,7 +54,7 @@ private:
     UFUNCTION()
     void HandleWorldShift(EWorldState NewWorld);
 
-    void SetDoorState(bool bShouldBeSolid);
+    void SetDoorState(bool bShouldBeSolid, EWorldState CurrentWorld);
     void PlayDoorAnimation(bool bOpening);
 
     bool IsSolidInWorld(EWorldState World) const;
@@ -62,6 +62,7 @@ private:
 
     bool bIsCurrentlySolid;
     bool bHasInitialized;
+    EWorldState CachedWorldState;
 
     TWeakObjectPtr<AWorldManager> CachedWorldManager;
     FRotator InitialDoorRotation;
