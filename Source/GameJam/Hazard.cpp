@@ -22,13 +22,13 @@ AHazard::AHazard()
     CollisionBox->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
     CollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
     CollisionBox->SetGenerateOverlapEvents(true);
-
+	
     HazardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HazardMesh"));
     HazardMesh->SetupAttachment(RootComponent);
     HazardMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
+	HazardMesh->SetupAttachment(RootComponent);
     WorldShiftBehavior = CreateDefaultSubobject<UWorldShiftBehaviorComponent>(TEXT("WorldShiftBehavior"));
-    WorldShiftBehavior->SetupAttachment(RootComponent);
+
 
     CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &AHazard::OnOverlapBegin);
     CollisionBox->OnComponentEndOverlap.AddDynamic(this, &AHazard::OnOverlapEnd);
