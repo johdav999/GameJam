@@ -16,8 +16,8 @@ class UWorldShiftBehaviorComponent;
 struct FHitResult;
 enum class EPlatformState : uint8;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FWorldButtonPressedSignature, AWorldButton*, Button, AActor*, PressingActor);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FWorldButtonResetSignature, AWorldButton*, Button);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnButtonPressed, AWorldButton*, Button, AActor*, PressingActor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnButtonReset, AWorldButton*, Button);
 
 /**
  * Defines the visual styling for a button in a specific world state.
@@ -65,7 +65,11 @@ class GAMEJAM_API AWorldButton : public AActor
 public:
     AWorldButton();
 
-    /** Attempts to press the button and returns true when the interaction was successful. */
+    /** Primary entry point for pressing the button from interaction code. */
+    UFUNCTION(BlueprintCallable, Category = "Button")
+    bool PressButton(AActor* PressingActor);
+
+    /** Legacy helper for backward compatibility with existing Blueprints. */
     UFUNCTION(BlueprintCallable, Category = "Button")
     bool TryPressButton(AActor* PressingActor);
 
@@ -95,19 +99,19 @@ public:
 
     /** Native multicast delegate fired whenever the button is successfully pressed. */
     UPROPERTY(BlueprintAssignable, Category = "Button|Events")
-    FWorldButtonPressedSignature OnButtonPressedDelegate;
+    FOnButtonPressed OnButtonPressed;
 
     /** Native multicast delegate fired whenever the button resets. */
     UPROPERTY(BlueprintAssignable, Category = "Button|Events")
-    FWorldButtonResetSignature OnButtonResetDelegate;
+    FOnButtonReset OnButtonReset;
 
     /** Blueprint hook that fires when the button is pressed. */
     UFUNCTION(BlueprintImplementableEvent, Category = "Button|Events")
-    void OnButtonPressed(AActor* PressingActor);
+    void ReceiveButtonPressed(AActor* PressingActor);
 
     /** Blueprint hook that fires when the button resets. */
     UFUNCTION(BlueprintImplementableEvent, Category = "Button|Events")
-    void OnButtonReset();
+    void ReceiveButtonReset();
 
 protected:
     virtual void BeginPlay() override;
@@ -149,6 +153,18 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button")
     bool bCanBePressedOnce;
 
+    /** When true, the button destroys itself after a successful one-time press. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button", meta = (EditCondition = "bCanBePressedOnce"))
+    bool bDestroyAfterUse;
+
+    /**
+     * Actors that should react when this button is pressed. Any actor implementing
+     * UButtonInteractable will receive OnButtonActivated. Designers can list multiple
+     * actors here to fan out button logic without additional scripting.
+     */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button|Interaction")
+    TArray<TObjectPtr<AActor>> LinkedTargets;
+
     /** Default world states where the button should behave as solid when no explicit behavior is provided. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button|World")
     TArray<EWorldState> SolidWorlds;
@@ -172,6 +188,7 @@ private:
     FWorldButtonVisualStyle GetVisualStyleForWorld(EWorldState World) const;
     bool InternalPress(AActor* PressingActor);
     void HandlePressFeedback(AActor* PressingActor);
+    void NotifyLinkedTargets();
     void CancelPendingReset();
 
     UFUNCTION()

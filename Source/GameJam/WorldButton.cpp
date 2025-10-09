@@ -1,5 +1,6 @@
 #include "WorldButton.h"
 
+#include "ButtonInteractable.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -40,6 +41,7 @@ AWorldButton::AWorldButton()
     bAutoReset = true;
     ResetDelay = 1.5f;
     bCanBePressedOnce = false;
+    bDestroyAfterUse = false;
     ColorParameterName = TEXT("ButtonColor");
 
     DefaultVisualStyle = FWorldButtonVisualStyle(FLinearColor(0.3f, 0.3f, 0.3f, 1.f), FLinearColor(0.08f, 0.08f, 0.08f, 1.f), FVector(0.f, 0.f, -5.f));
@@ -105,9 +107,14 @@ void AWorldButton::EndPlay(const EEndPlayReason::Type EndPlayReason)
     Super::EndPlay(EndPlayReason);
 }
 
-bool AWorldButton::TryPressButton(AActor* PressingActor)
+bool AWorldButton::PressButton(AActor* PressingActor)
 {
     return InternalPress(PressingActor);
+}
+
+bool AWorldButton::TryPressButton(AActor* PressingActor)
+{
+    return PressButton(PressingActor);
 }
 
 bool AWorldButton::IsActorOverlappingButton(AActor* Actor) const
@@ -170,8 +177,8 @@ void AWorldButton::ResetButton()
     bIsPressed = false;
     RefreshButtonVisuals();
 
-    OnButtonResetDelegate.Broadcast(this);
-    OnButtonReset();
+    OnButtonReset.Broadcast(this);
+    ReceiveButtonReset();
 }
 
 void AWorldButton::ForceResetButton()
@@ -183,8 +190,8 @@ void AWorldButton::ForceResetButton()
 
     RefreshButtonVisuals();
 
-    OnButtonResetDelegate.Broadcast(this);
-    OnButtonReset();
+    OnButtonReset.Broadcast(this);
+    ReceiveButtonReset();
 }
 
 void AWorldButton::InitializeWorldBehaviorDefaults()
@@ -255,8 +262,16 @@ bool AWorldButton::InternalPress(AActor* PressingActor)
     RefreshButtonVisuals();
     HandlePressFeedback(PressingActor);
 
-    OnButtonPressedDelegate.Broadcast(this, PressingActor);
-    OnButtonPressed(PressingActor);
+    OnButtonPressed.Broadcast(this, PressingActor);
+    ReceiveButtonPressed(PressingActor);
+
+    NotifyLinkedTargets();
+
+    if (bCanBePressedOnce && bDestroyAfterUse)
+    {
+        Destroy();
+        return true;
+    }
 
     if (bAutoReset && !(bCanBePressedOnce && bHasBeenPressedOnce))
     {
@@ -290,6 +305,25 @@ void AWorldButton::HandlePressFeedback(AActor* PressingActor)
     if (PressEffect)
     {
         UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), PressEffect, EffectLocation);
+    }
+}
+
+void AWorldButton::NotifyLinkedTargets()
+{
+    for (int32 Index = 0; Index < LinkedTargets.Num(); ++Index)
+    {
+        AActor* Target = LinkedTargets[Index];
+        if (!IsValid(Target))
+        {
+            continue;
+        }
+
+        if (Target->GetClass()->ImplementsInterface(UButtonInteractable::StaticClass()))
+        {
+            // The interface keeps responses extensible: designers can implement anything from door toggles
+            // to FX triggers without modifying button code.
+            IButtonInteractable::Execute_OnButtonActivated(Target, this);
+        }
     }
 }
 
