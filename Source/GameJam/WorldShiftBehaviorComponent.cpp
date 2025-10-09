@@ -177,10 +177,15 @@ void UWorldShiftBehaviorComponent::HandleWorldShift(EWorldState NewWorld)
 {
     CurrentWorld = NewWorld;
     const EPlatformState NewState = GetBehaviorForWorld(NewWorld);
+    CurrentState = NewState;
     ApplyPlatformState(NewState, NewWorld);
     UpdateGhostHint(NewWorld);
-    CurrentState = NewState;
-    OnShiftStateChanged(NewState, NewWorld);
+    const bool bHandledByTimedState = (NewState == EPlatformState::TimedSolid);
+    if (!bHandledByTimedState)
+    {
+        OnShiftStateChanged(CurrentState, NewWorld);
+        OnStateChanged.Broadcast(CurrentState, NewWorld);
+    }
 }
 
 void UWorldShiftBehaviorComponent::HandleGlobalTimedSolidPhaseChanged(bool bNowSolid)
@@ -198,6 +203,10 @@ void UWorldShiftBehaviorComponent::HandleGlobalTimedSolidPhaseChanged(bool bNowS
     {
         ApplyGhostState(CurrentWorld);
     }
+
+    CurrentState = bNowSolid ? EPlatformState::Solid : EPlatformState::Ghost;
+    OnShiftStateChanged(CurrentState, CurrentWorld);
+    OnStateChanged.Broadcast(CurrentState, CurrentWorld);
 }
 
 void UWorldShiftBehaviorComponent::HandleGlobalTimedSolidPreWarning(bool bWillBeSolid)
@@ -232,6 +241,9 @@ void UWorldShiftBehaviorComponent::ApplyPlatformState(EPlatformState NewState, E
         else
         {
             ApplySolidState();
+            CurrentState = EPlatformState::Solid;
+            OnShiftStateChanged(CurrentState, WorldContext);
+            OnStateChanged.Broadcast(CurrentState, WorldContext);
         }
         break;
     default:
@@ -300,6 +312,11 @@ void UWorldShiftBehaviorComponent::ApplyPreWarningState()
     {
         ApplyMaterial(PreWarningMaterial.Get());
     }
+}
+
+bool UWorldShiftBehaviorComponent::IsCurrentlySolid() const
+{
+    return CurrentState == EPlatformState::Solid;
 }
 
 void UWorldShiftBehaviorComponent::ApplyMaterial(UMaterialInterface* Material) const

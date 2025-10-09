@@ -11,6 +11,8 @@ class AWorldManager;
 enum class EPlatformPrefabType : uint8;
 enum class EPlatformState : uint8;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FWorldShiftStateChangedSignature, EPlatformState, NewState, EWorldState, WorldContext);
+
 /**
  * Component that applies world shift behavior to an owning actor.
  * The component is responsible for reacting to world changes, swapping
@@ -75,6 +77,10 @@ public:
     /** Forces the ghost hint mesh to refresh using the provided preview world. */
     void RefreshGhostHintPreview(EWorldState PreviewWorld);
 
+    /** Native event fired when the platform state changes. */
+    UPROPERTY(BlueprintAssignable, Category = "World Shift|Events")
+    FWorldShiftStateChangedSignature OnStateChanged;
+
     /** Blueprint hook fired when the platform state changes. */
     UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
     void OnShiftStateChanged(EPlatformState NewState, EWorldState WorldContext);
@@ -86,6 +92,10 @@ public:
     /** Blueprint hook fired when the ghost hint mesh gets updated. */
     UFUNCTION(BlueprintImplementableEvent, Category = "World Shift|Events")
     void OnGhostHintUpdated();
+
+    /** Returns whether the component is currently in a solid state. */
+    UFUNCTION(BlueprintCallable, Category = "World Shift")
+    bool IsCurrentlySolid() const;
 
 protected:
     virtual void BeginPlay() override;
