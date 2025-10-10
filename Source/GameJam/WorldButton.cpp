@@ -11,6 +11,8 @@
 #include "WorldShiftBehaviorComponent.h"
 #include "GameFramework/Pawn.h"
 
+#include <limits>
+
 namespace
 {
 static const TArray<EWorldState> GAllWorldStates = {EWorldState::Light, EWorldState::Shadow, EWorldState::Chaos};
@@ -43,6 +45,9 @@ AWorldButton::AWorldButton()
     bCanBePressedOnce = false;
     bDestroyAfterUse = false;
     ColorParameterName = TEXT("ButtonColor");
+    TargetTag = NAME_None;
+    bFindNearestOnly = false;
+    bVerboseLinkLogging = false;
 
     DefaultVisualStyle = FWorldButtonVisualStyle(FLinearColor(0.3f, 0.3f, 0.3f, 1.f), FLinearColor(0.08f, 0.08f, 0.08f, 1.f), FVector(0.f, 0.f, -5.f));
     WorldVisualStyles.Add(EWorldState::Light, FWorldButtonVisualStyle(FLinearColor(0.95f, 0.84f, 0.32f, 1.f), FLinearColor(0.85f, 0.6f, 0.1f, 1.f), FVector(0.f, 0.f, -5.f)));
@@ -87,6 +92,8 @@ void AWorldButton::BeginPlay()
         bIsInteractable = true;
         RefreshButtonVisuals();
     }
+
+    DiscoverLinkedTargetsByTag();
 }
 
 void AWorldButton::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -324,6 +331,130 @@ void AWorldButton::NotifyLinkedTargets()
             // to FX triggers without modifying button code.
             IButtonInteractable::Execute_OnButtonActivated(Target, this);
         }
+    }
+}
+
+void AWorldButton::RegisterLinkedTarget(AActor* NewTarget)
+{
+    if (!IsValid(NewTarget) || NewTarget == this)
+    {
+        return;
+    }
+
+    if (!NewTarget->GetClass()->ImplementsInterface(UButtonInteractable::StaticClass()))
+    {
+        if (bVerboseLinkLogging)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("[WorldButton:%s] Ignoring runtime registration for %s because it does not implement ButtonInteractable."),
+                *GetName(), *NewTarget->GetName());
+        }
+        return;
+    }
+
+    if (LinkedTargets.Contains(NewTarget))
+    {
+        if (bVerboseLinkLogging)
+        {
+            UE_LOG(LogTemp, Log, TEXT("[WorldButton:%s] Runtime registration skipped; %s is already linked."), *GetName(), *NewTarget->GetName());
+        }
+        return;
+    }
+
+    LinkedTargets.Add(NewTarget);
+
+    if (bVerboseLinkLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("[WorldButton:%s] Runtime-registered linked target %s."), *GetName(), *NewTarget->GetName());
+    }
+}
+
+void AWorldButton::DiscoverLinkedTargetsByTag()
+{
+    if (LinkedTargets.Num() > 0)
+    {
+        if (bVerboseLinkLogging)
+        {
+            UE_LOG(LogTemp, Log, TEXT("[WorldButton:%s] Manual links (%d) detected; skipping auto-discovery."), *GetName(), LinkedTargets.Num());
+        }
+        return;
+    }
+
+    if (TargetTag.IsNone())
+    {
+        if (bVerboseLinkLogging)
+        {
+            UE_LOG(LogTemp, Log, TEXT("[WorldButton:%s] No TargetTag configured; auto-discovery skipped."), *GetName());
+        }
+        return;
+    }
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    TArray<AActor*> FoundActors;
+    UGameplayStatics::GetAllActorsWithTag(World, TargetTag, FoundActors);
+
+    AActor* NearestActor = nullptr;
+    float BestDistSq = std::numeric_limits<float>::max();
+    const FVector Origin = GetActorLocation();
+
+    for (AActor* Candidate : FoundActors)
+    {
+        if (!IsValid(Candidate) || Candidate == this)
+        {
+            continue;
+        }
+
+        if (!Candidate->GetClass()->ImplementsInterface(UButtonInteractable::StaticClass()))
+        {
+            continue;
+        }
+
+        if (LinkedTargets.Contains(Candidate))
+        {
+            continue;
+        }
+
+        if (bFindNearestOnly)
+        {
+            const float DistSq = FVector::DistSquared(Origin, Candidate->GetActorLocation());
+            if (DistSq < BestDistSq)
+            {
+                BestDistSq = DistSq;
+                NearestActor = Candidate;
+            }
+        }
+        else
+        {
+            LinkedTargets.Add(Candidate);
+
+            if (bVerboseLinkLogging)
+            {
+                UE_LOG(LogTemp, Log, TEXT("[WorldButton:%s] Auto-linked target %s via tag '%s'."), *GetName(), *Candidate->GetName(), *TargetTag.ToString());
+            }
+        }
+    }
+
+    if (bFindNearestOnly && NearestActor)
+    {
+        LinkedTargets.Add(NearestActor);
+
+        if (bVerboseLinkLogging)
+        {
+            UE_LOG(LogTemp, Log, TEXT("[WorldButton:%s] Auto-linked nearest target %s via tag '%s'."), *GetName(), *NearestActor->GetName(), *TargetTag.ToString());
+        }
+    }
+
+    if (LinkedTargets.Num() == 0)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[WorldButton:%s] No button targets found with tag '%s'."), *GetName(), *TargetTag.ToString());
+    }
+    else if (bVerboseLinkLogging)
+    {
+        UE_LOG(LogTemp, Log, TEXT("[WorldButton:%s] Established %d auto-discovered link(s) using tag '%s'."), *GetName(), LinkedTargets.Num(), *TargetTag.ToString());
     }
 }
 
