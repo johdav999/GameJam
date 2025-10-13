@@ -89,6 +89,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Button")
     void ForceResetButton();
 
+    /** Registers an actor at runtime, ensuring duplicates are ignored and interface requirements enforced. */
+    UFUNCTION(BlueprintCallable, Category = "Button|Linking")
+    void RegisterLinkedTarget(AActor* NewTarget);
+
     /** Returns the world state this button is currently visualizing. */
     UFUNCTION(BlueprintPure, Category = "Button")
     EWorldState GetCurrentVisualWorld() const { return CurrentVisualWorld; }
@@ -161,9 +165,28 @@ protected:
      * Actors that should react when this button is pressed. Any actor implementing
      * UButtonInteractable will receive OnButtonActivated. Designers can list multiple
      * actors here to fan out button logic without additional scripting.
+     *
+     * Manual assignments always take precedence over tag-based discovery: if this list
+     * contains any entries at BeginPlay, automatic linking is skipped entirely.
      */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button|Interaction")
     TArray<TObjectPtr<AActor>> LinkedTargets;
+
+    /**
+     * Optional gameplay tag used for auto-discovery when no explicit LinkedTargets are set.
+     * Leave LinkedTargets empty and assign this tag to quickly link buttons in bulk.
+     * Blueprint example: a button tagged "DoorA" finds all actors tagged "DoorA" automatically.
+     */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button|Linking")
+    FName TargetTag;
+
+    /** When true, auto-linking will only choose the closest matching actor instead of all matches. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button|Linking")
+    bool bFindNearestOnly;
+
+    /** Enables verbose logging for link discovery and registration. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button|Linking")
+    bool bVerboseLinkLogging;
 
     /** Default world states where the button should behave as solid when no explicit behavior is provided. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Button|World")
@@ -207,6 +230,9 @@ private:
 
     /** Tracks overlapping actors for blueprint queries. */
     TSet<TWeakObjectPtr<AActor>> OverlappingActors;
+
+    /** Resolves automatic links using the configured TargetTag when no manual links were provided. */
+    void DiscoverLinkedTargetsByTag();
 
     /** Cached initial relative location for the button mesh. */
     FVector InitialButtonRelativeLocation;

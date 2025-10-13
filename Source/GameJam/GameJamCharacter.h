@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "TimerManager.h"
 #include "WorldShiftTypes.h"
 #include "GameJamCharacter.generated.h"
 
@@ -69,6 +70,10 @@ public:
         /** Constructor */
         AGameJamCharacter();
 
+        /** Starts the automatic world introduction sequence. */
+        UFUNCTION(BlueprintCallable, Category="World Shift|Intro")
+        void StartIntroWorldSequence();
+
 protected:
 
         virtual void BeginPlay() override;
@@ -123,5 +128,36 @@ public:
 private:
         /** Tracks whether the initial world state notification has been received. */
         bool bReceivedInitialWorldNotification = false;
+
+        /** Tracks whether manual world shifting is currently allowed. */
+        bool bManualWorldShiftEnabled = true;
+
+        /** Tracks whether the intro sequence is currently running. */
+        bool bIntroSequenceActive = false;
+
+        /** Walk speed applied while the intro sequence is active. */
+        UPROPERTY(EditAnywhere, Category="World Shift|Intro", meta = (ClampMin = "0.0"))
+        float IntroWalkSpeed = 150.0f;
+
+        /** Cached walk speed restored once the intro sequence ends. */
+        float CachedWalkSpeed = 0.0f;
+
+        /** Cached jump Z velocity restored once the intro sequence ends. */
+        float CachedJumpZVelocity = 0.0f;
+
+        /** Timer used to transition from Chaos to Dream. */
+        FTimerHandle IntroDreamTimerHandle;
+
+        /** Timer used to transition from Dream to Light. */
+        FTimerHandle IntroLightTimerHandle;
+
+        /** Applies the Dream world during the intro sequence. */
+        void HandleIntroDreamTransition();
+
+        /** Applies the Light world and restores control when the intro ends. */
+        void HandleIntroLightTransition();
+
+        /** Restores player control after the intro sequence. */
+        void RestoreControlAfterIntro();
 };
 
