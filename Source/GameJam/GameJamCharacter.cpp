@@ -17,6 +17,7 @@
 #include "WorldManager.h"
 #include "WorldShiftEffectsComponent.h"
 #include "HealthComponent.h"
+#include "TimerManager.h"
 
 AGameJamCharacter::AGameJamCharacter()
 {
@@ -63,6 +64,42 @@ AGameJamCharacter::AGameJamCharacter()
 
         // Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
         // are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+}
+
+void AGameJamCharacter::StartIntroWorldSequence()
+{
+        if (bIntroSequenceActive)
+        {
+                return;
+        }
+
+        bIntroSequenceActive = true;
+        bManualWorldShiftEnabled = false;
+
+        if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+        {
+                CachedWalkSpeed = Movement->MaxWalkSpeed;
+                CachedJumpZVelocity = Movement->JumpZVelocity;
+
+                if (IntroWalkSpeed > 0.0f)
+                {
+                        Movement->MaxWalkSpeed = IntroWalkSpeed;
+                }
+
+                Movement->JumpZVelocity = 0.0f;
+        }
+
+        if (UWorld* World = GetWorld())
+        {
+                if (AWorldManager* Manager = AWorldManager::Get(World))
+                {
+                        Manager->SetWorld(EWorldState::Chaos);
+                }
+
+                FTimerManager& TimerManager = World->GetTimerManager();
+                TimerManager.SetTimer(IntroDreamTimerHandle, this, &AGameJamCharacter::HandleIntroDreamTransition, 5.0f, false);
+                TimerManager.SetTimer(IntroLightTimerHandle, this, &AGameJamCharacter::HandleIntroLightTransition, 10.0f, false);
+        }
 }
 
 void AGameJamCharacter::BeginPlay()
@@ -128,6 +165,11 @@ void AGameJamCharacter::Look(const FInputActionValue& Value)
 
 void AGameJamCharacter::CycleWorld(const FInputActionValue& Value)
 {
+        if (!bManualWorldShiftEnabled)
+        {
+                return;
+        }
+
         const float AxisValue = Value.Get<float>();
         if (FMath::IsNearlyZero(AxisValue))
         {
@@ -168,6 +210,60 @@ void AGameJamCharacter::HandleWorldShifted(EWorldState NewWorld)
         {
                 constexpr float WorldShiftPenalty = 10.0f;
                 HealthComponent->ApplyDamage(WorldShiftPenalty);
+        }
+}
+
+void AGameJamCharacter::HandleIntroDreamTransition()
+{
+        if (!bIntroSequenceActive)
+        {
+                return;
+        }
+
+        if (UWorld* World = GetWorld())
+        {
+                if (AWorldManager* Manager = AWorldManager::Get(World))
+                {
+                        // Treat the Shadow state as the Dream world for the intro sequence.
+                        Manager->SetWorld(EWorldState::Shadow);
+                }
+        }
+}
+
+void AGameJamCharacter::HandleIntroLightTransition()
+{
+        if (!bIntroSequenceActive)
+        {
+                return;
+        }
+
+        if (UWorld* World = GetWorld())
+        {
+                if (AWorldManager* Manager = AWorldManager::Get(World))
+                {
+                        Manager->SetWorld(EWorldState::Light);
+                }
+        }
+
+        RestoreControlAfterIntro();
+}
+
+void AGameJamCharacter::RestoreControlAfterIntro()
+{
+        bIntroSequenceActive = false;
+        bManualWorldShiftEnabled = true;
+
+        if (UWorld* World = GetWorld())
+        {
+                FTimerManager& TimerManager = World->GetTimerManager();
+                TimerManager.ClearTimer(IntroDreamTimerHandle);
+                TimerManager.ClearTimer(IntroLightTimerHandle);
+        }
+
+        if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+        {
+                Movement->MaxWalkSpeed = CachedWalkSpeed;
+                Movement->JumpZVelocity = CachedJumpZVelocity;
         }
 }
 
