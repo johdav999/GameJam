@@ -1,0 +1,179 @@
+{
+  "Nodes": [
+    {
+      "Type": "MaterialExpressionTextureCoordinate",
+      "Name": "TexCoord",
+      "Properties": { "UTiling": 1.0, "VTiling": 1.0 },
+      "Connections": []
+    },
+    {
+      "Type": "MaterialExpressionScalarParameter",
+      "Name": "Tiling",
+      "Properties": { "ParameterName": "Tiling", "DefaultValue": 1.0 },
+      "Connections": []
+    },
+    {
+      "Type": "MaterialExpressionMultiply",
+      "Name": "UVScale",
+      "Connections": [
+        { "Input": "A", "Output": "TexCoord" },
+        { "Input": "B", "Output": "Tiling" }
+      ]
+    },
+    {
+      "Type": "MaterialExpressionVectorParameter",
+      "Name": "GlobalTint",
+      "Properties": { "ParameterName": "GlobalTint", "DefaultValue": [1,1,1,1] },
+      "Connections": []
+    },
+    {
+      "Type": "MaterialExpressionScalarParameter",
+      "Name": "Roughness",
+      "Properties": { "ParameterName": "Roughness", "DefaultValue": 0.6 },
+      "Connections": []
+    },
+
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Grass_Base",
+      "Properties": { "ParameterName": "Grass_Base" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Grass_Detail",
+      "Properties": { "ParameterName": "Grass_Detail" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+    {
+      "Type": "MaterialExpressionMultiply",
+      "Name": "Grass_Mix",
+      "Connections": [
+        { "Input": "A", "Output": "Grass_Base" },
+        { "Input": "B", "Output": "Grass_Detail" }
+      ]
+    },
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Grass_Normal",
+      "Properties": { "ParameterName": "Grass_Normal", "SamplerType": "Normal" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Rock_Base",
+      "Properties": { "ParameterName": "Rock_Base" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Rock_Detail",
+      "Properties": { "ParameterName": "Rock_Detail" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+    {
+      "Type": "MaterialExpressionMultiply",
+      "Name": "Rock_Mix",
+      "Connections": [
+        { "Input": "A", "Output": "Rock_Base" },
+        { "Input": "B", "Output": "Rock_Detail" }
+      ]
+    },
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Rock_Normal",
+      "Properties": { "ParameterName": "Rock_Normal", "SamplerType": "Normal" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Dirt_Base",
+      "Properties": { "ParameterName": "Dirt_Base" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Dirt_Detail",
+      "Properties": { "ParameterName": "Dirt_Detail" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+    {
+      "Type": "MaterialExpressionMultiply",
+      "Name": "Dirt_Mix",
+      "Connections": [
+        { "Input": "A", "Output": "Dirt_Base" },
+        { "Input": "B", "Output": "Dirt_Detail" }
+      ]
+    },
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Dirt_Normal",
+      "Properties": { "ParameterName": "Dirt_Normal", "SamplerType": "Normal" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Snow_Base",
+      "Properties": { "ParameterName": "Snow_Base" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Snow_Detail",
+      "Properties": { "ParameterName": "Snow_Detail" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+    {
+      "Type": "MaterialExpressionMultiply",
+      "Name": "Snow_Mix",
+      "Connections": [
+        { "Input": "A", "Output": "Snow_Base" },
+        { "Input": "B", "Output": "Snow_Detail" }
+      ]
+    },
+    {
+      "Type": "MaterialExpressionTextureSampleParameter2D",
+      "Name": "Snow_Normal",
+      "Properties": { "ParameterName": "Snow_Normal", "SamplerType": "Normal" },
+      "Connections": [{ "Input": "Coordinates", "Output": "UVScale" }]
+    },
+
+    {
+      "Type": "MaterialExpressionLandscapeLayerBlend",
+      "Name": "LayerBlend_Base",
+      "Properties": {
+        "Layers": [
+          { "LayerName": "Grass", "BlendType": "WeightBlend", "Input": "Grass_Mix" },
+          { "LayerName": "Rock", "BlendType": "WeightBlend", "Input": "Rock_Mix" },
+          { "LayerName": "Dirt", "BlendType": "WeightBlend", "Input": "Dirt_Mix" },
+          { "LayerName": "Snow", "BlendType": "WeightBlend", "Input": "Snow_Mix" }
+        ]
+      },
+      "Connections": []
+    },
+    {
+      "Type": "MaterialExpressionLandscapeLayerBlend",
+      "Name": "LayerBlend_Normal",
+      "Properties": {
+        "Layers": [
+          { "LayerName": "Grass", "BlendType": "WeightBlend", "Input": "Grass_Normal" },
+          { "LayerName": "Rock", "BlendType": "WeightBlend", "Input": "Rock_Normal" },
+          { "LayerName": "Dirt", "BlendType": "WeightBlend", "Input": "Dirt_Normal" },
+          { "LayerName": "Snow", "BlendType": "WeightBlend", "Input": "Snow_Normal" }
+        ]
+      },
+      "Connections": []
+    },
+    {
+      "Type": "MaterialOutput",
+      "Connections": [
+        { "Input": "BaseColor", "Output": "LayerBlend_Base" },
+        { "Input": "Normal", "Output": "LayerBlend_Normal" },
+        { "Input": "Roughness", "Output": "Roughness" }
+      ]
+    }
+  ]
+}
