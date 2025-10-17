@@ -247,6 +247,25 @@ void UGameJamGameInstance::ClearHintsOnReset()
     }
 }
 
+void UGameJamGameInstance::ClearAllHints()
+{
+    if (KnownHints.Num() == 0)
+    {
+        // Even when nothing changes we still need to notify listeners so they can refresh.
+        OnHintCollectionChanged.Broadcast();
+        bDirty = true;
+        SaveLoopData();
+        return;
+    }
+
+    KnownHints.Empty();
+
+    OnHintCollectionChanged.Broadcast();
+
+    bDirty = true;
+    SaveLoopData();
+}
+
 void UGameJamGameInstance::CheckFutureHints(int32 CurrentLoop)
 {
     bool bCollectionChanged = false;
