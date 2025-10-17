@@ -25,12 +25,25 @@ AGameJamCharacter::AGameJamCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 		
         // Don't rotate when the controller rotates. Let that just affect the camera.
+
+
+
         bUseControllerRotationPitch = false;
-        bUseControllerRotationYaw = false;
+        bUseControllerRotationYaw =true;
         bUseControllerRotationRoll = false;
 
+
+        CameraBoom->bUsePawnControlRotation = true;
+
+// The camera itself should NOT rotate relative to the boom
+
+
+// Let controller rotation affect the character yaw
+
+
+
         // Configure character movement for third-person traversal
-        GetCharacterMovement()->bOrientRotationToMovement = true;
+        GetCharacterMovement()->bOrientRotationToMovement = false;
         GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
         GetCharacterMovement()->SetPlaneConstraintEnabled(false);
         GetCharacterMovement()->bConstrainToPlane = false;
@@ -275,12 +288,24 @@ void AGameJamCharacter::DoMove(float Right, float Forward)
         {
                 const FRotator ControlRotation = Controller->GetControlRotation();
                 const FRotator YawRotation(0, ControlRotation.Yaw, 0);
+                UE_LOG(LogTemp, Warning, TEXT("YawRotation: Pitch=%f  Yaw=%f  Roll=%f"),
+                    YawRotation.Pitch, YawRotation.Yaw, YawRotation.Roll);
+              
 
+                UE_LOG(LogTemp, Warning, TEXT("ControlRotation: Pitch=%f  Yaw=%f  Roll=%f"),
+                    ControlRotation.Pitch, ControlRotation.Yaw, ControlRotation.Roll);
                 const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
                 const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+                const FVector MoveDirection = (ForwardDirection * Forward + RightDirection * Right).GetSafeNormal();
 
                 AddMovementInput(RightDirection, Right);
                 AddMovementInput(ForwardDirection, Forward);
+                // Only rotate if moving
+                if (!MoveDirection.IsNearlyZero())
+                {
+                    FRotator TargetRotation = MoveDirection.Rotation();
+                    SetActorRotation(TargetRotation);
+                }
         }
 }
 
@@ -300,4 +325,18 @@ void AGameJamCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+void AGameJamCharacter::Tick(float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+
+    if (Controller)
+    {
+        FRotator ControlRot = Controller->GetControlRotation();
+        FRotator TargetRot(0.f, ControlRot.Yaw, 0.f);
+
+        // Smoothly interpolate
+        FRotator NewRot = FMath::RInterpTo(GetActorRotation(), TargetRot, DeltaSeconds, 5.f);
+        SetActorRotation(NewRot);
+    }
 }

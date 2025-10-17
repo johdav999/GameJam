@@ -78,6 +78,8 @@ protected:
 
         virtual void BeginPlay() override;
 
+        void Tick(float DeltaSeconds) override;
+
         /** Initialize input action bindings */
         virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -113,6 +115,7 @@ public:
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
+
 
 public:
 
