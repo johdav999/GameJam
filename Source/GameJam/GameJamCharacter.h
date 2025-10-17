@@ -81,6 +81,8 @@ protected:
 
         void Tick(float DeltaSeconds) override;
 
+        virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
+
         /** Initialize input action bindings */
         virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -176,8 +178,6 @@ private:
         /** Timer used to delay the world reset after a fall is detected. */
         FTimerHandle FallingResetTimerHandle;
 
-        /** Handles movement mode changes to detect the start/end of falls. */
-        void HandleMovementModeChanged(ACharacter* InCharacter, EMovementMode PreviousMovementMode, uint8 PreviousCustomMode);
 
         /** Starts the delayed world reset process. */
         void StartFallingResetTimer();

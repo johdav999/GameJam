@@ -131,20 +131,10 @@ void AGameJamCharacter::BeginPlay()
                         Manager->OnWorldShifted.AddDynamic(this, &AGameJamCharacter::HandleWorldShifted);
                 }
         }
-
-        if (UCharacterMovementComponent* Movement = GetCharacterMovement())
-        {
-                Movement->MovementModeChangedDelegate.AddUObject(this, &AGameJamCharacter::HandleMovementModeChanged);
-        }
 }
 
 void AGameJamCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-        if (UCharacterMovementComponent* Movement = GetCharacterMovement())
-        {
-                Movement->MovementModeChangedDelegate.RemoveAll(this);
-        }
-
         CancelFallingResetTimer();
 
         Super::EndPlay(EndPlayReason);
@@ -243,12 +233,9 @@ void AGameJamCharacter::HandleWorldShifted(EWorldState NewWorld)
         }
 }
 
-void AGameJamCharacter::HandleMovementModeChanged(ACharacter* InCharacter, EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+void AGameJamCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
-        if (InCharacter != this)
-        {
-                return;
-        }
+        Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 
         if (UCharacterMovementComponent* Movement = GetCharacterMovement())
         {
@@ -256,7 +243,7 @@ void AGameJamCharacter::HandleMovementModeChanged(ACharacter* InCharacter, EMove
 
                 if (bNowFalling)
                 {
-                        if (PreviousMovementMode != MOVE_Falling && Movement->Velocity.Z <= 0.0f)
+                        if (PrevMovementMode != MOVE_Falling && Movement->Velocity.Z <= 0.0f)
                         {
                                 StartFallingResetTimer();
                         }
