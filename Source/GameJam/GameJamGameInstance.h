@@ -43,7 +43,7 @@ public:
 
     /** Adds a new hint to the player's memory if it does not already exist. */
     UFUNCTION(BlueprintCallable, Category = "Hints")
-    bool AddHint(FName HintID, const FText& HintText, bool bIsPersistent, EHintTemporalState TemporalState, int32 LoopToUnlock, const TArray<FString>& DialogAudio = TArray<FString>());
+    bool AddHint(FName HintID, const FText& HintText, bool bIsPersistent, EHintTemporalState TemporalState, int32 LoopToUnlock, const TArray<FString>& DialogAudio);
 
     /** Returns true if the player already knows the supplied hint. */
     UFUNCTION(BlueprintPure, Category = "Hints")
