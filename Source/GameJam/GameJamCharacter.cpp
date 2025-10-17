@@ -33,7 +33,7 @@ AGameJamCharacter::AGameJamCharacter()
         bUseControllerRotationRoll = false;
 
 
-        CameraBoom->bUsePawnControlRotation = true;
+
 
 // The camera itself should NOT rotate relative to the boom
 
@@ -63,7 +63,7 @@ AGameJamCharacter::AGameJamCharacter()
         CameraBoom->TargetArmLength = 300.0f;
         CameraBoom->bUsePawnControlRotation = true;
         CameraBoom->bDoCollisionTest = true;
-
+        CameraBoom->bUsePawnControlRotation = true;
 	// Create a follow camera
         FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
         FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
