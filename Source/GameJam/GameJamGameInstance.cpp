@@ -109,7 +109,7 @@ void UGameJamGameInstance::ApplyLoopCount(int32 NewLoopCount, bool bFromLoad)
     OnLoopCountChanged.Broadcast(LoopCount);
 }
 
-bool UGameJamGameInstance::AddHint(FName HintID, const FText& HintText, bool bIsPersistent, EHintTemporalState TemporalState, int32 LoopToUnlock)
+bool UGameJamGameInstance::AddHint(FName HintID, const FText& HintText, bool bIsPersistent, EHintTemporalState TemporalState, int32 LoopToUnlock, const TArray<FString>& DialogAudio)
 {
     if (HintID.IsNone() || KnownHints.Contains(HintID))
     {
@@ -122,6 +122,7 @@ bool UGameJamGameInstance::AddHint(FName HintID, const FText& HintText, bool bIs
     NewHint.bIsPersistent = bIsPersistent;
     NewHint.TemporalState = TemporalState;
     NewHint.LoopToUnlock = FMath::Max(0, LoopToUnlock);
+    NewHint.DialogAudio = DialogAudio;
 
     if (NewHint.TemporalState == EHintTemporalState::Future && NewHint.LoopToUnlock <= LoopCount)
     {
