@@ -1,5 +1,6 @@
 #include "Widget_Layout.h"
 
+#include "GameJamGameInstance.h"
 #include "Widget_WorldIndicator.h"
 
 #include "GameFramework/Pawn.h"
@@ -46,4 +47,31 @@ void UWidget_Layout::NativeConstruct()
             }
         }
     }
+
+    if (UWorld* World = GetWorld())
+    {
+        if (UGameJamGameInstance* GameInstance = Cast<UGameJamGameInstance>(World->GetGameInstance()))
+        {
+            ObservedGameInstance = GameInstance;
+            GameInstance->OnLoopCountChanged.AddDynamic(this, &UWidget_Layout::HandleLoopCountChanged);
+            HandleLoopCountChanged(GameInstance->GetLoopCount());
+        }
+    }
+}
+
+void UWidget_Layout::NativeDestruct()
+{
+    if (UGameJamGameInstance* GameInstance = ObservedGameInstance.Get())
+    {
+        GameInstance->OnLoopCountChanged.RemoveDynamic(this, &UWidget_Layout::HandleLoopCountChanged);
+    }
+
+    ObservedGameInstance.Reset();
+
+    Super::NativeDestruct();
+}
+
+void UWidget_Layout::HandleLoopCountChanged(int32 NewLoopCount)
+{
+    OnLoopCountUpdated(NewLoopCount);
 }
