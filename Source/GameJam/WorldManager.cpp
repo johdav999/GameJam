@@ -166,6 +166,7 @@ void AWorldManager::ResetWorld()
 
     if (UGameJamGameInstance* GameInstance = Cast<UGameJamGameInstance>(World->GetGameInstance()))
     {
+        GameInstance->HandleWorldReset();
         GameInstance->IncrementLoopCount();
     }
 

@@ -55,6 +55,10 @@ void UWidget_Layout::NativeConstruct()
             ObservedGameInstance = GameInstance;
             GameInstance->OnLoopCountChanged.AddDynamic(this, &UWidget_Layout::HandleLoopCountChanged);
             HandleLoopCountChanged(GameInstance->GetLoopCount());
+
+            GameInstance->OnHintChanged.AddDynamic(this, &UWidget_Layout::HandleHintChanged);
+            GameInstance->OnHintCollectionChanged.AddDynamic(this, &UWidget_Layout::HandleHintCollectionChanged);
+            HandleHintCollectionChanged();
         }
     }
 }
@@ -64,6 +68,8 @@ void UWidget_Layout::NativeDestruct()
     if (UGameJamGameInstance* GameInstance = ObservedGameInstance.Get())
     {
         GameInstance->OnLoopCountChanged.RemoveDynamic(this, &UWidget_Layout::HandleLoopCountChanged);
+        GameInstance->OnHintChanged.RemoveDynamic(this, &UWidget_Layout::HandleHintChanged);
+        GameInstance->OnHintCollectionChanged.RemoveDynamic(this, &UWidget_Layout::HandleHintCollectionChanged);
     }
 
     ObservedGameInstance.Reset();
@@ -74,4 +80,14 @@ void UWidget_Layout::NativeDestruct()
 void UWidget_Layout::HandleLoopCountChanged(int32 NewLoopCount)
 {
     OnLoopCountUpdated(NewLoopCount);
+}
+
+void UWidget_Layout::HandleHintChanged(const FHintData& UpdatedHint)
+{
+    OnHintUpdated(UpdatedHint);
+}
+
+void UWidget_Layout::HandleHintCollectionChanged()
+{
+    OnHintsRefreshed();
 }
