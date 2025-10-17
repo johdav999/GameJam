@@ -7,6 +7,7 @@
 class UWidget_HealthBar;
 class UWidget_WorldIndicator;
 class UWorldWidget;
+class UGameJamGameInstance;
 
 /**
  * Root HUD layout widget that exposes references to key UI elements for blueprint wiring.
@@ -34,4 +35,16 @@ public:
     TObjectPtr<UWidget_WorldIndicator> WorldWidgetInstance;
 
     virtual void NativeConstruct() override;
+    virtual void NativeDestruct() override;
+
+    /** Called when the loop counter changes so blueprints can update the HUD. */
+    UFUNCTION(BlueprintImplementableEvent, Category = "Loop")
+    void OnLoopCountUpdated(int32 NewLoopCount);
+
+private:
+    UFUNCTION()
+    void HandleLoopCountChanged(int32 NewLoopCount);
+
+    /** Cached pointer to the game instance we registered with. */
+    TWeakObjectPtr<UGameJamGameInstance> ObservedGameInstance;
 };

@@ -9,6 +9,7 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/MovementComponent.h"
 #include "GameFramework/PlayerStart.h"
+#include "GameJamGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "Sound/SoundSubmix.h"
@@ -161,6 +162,11 @@ void AWorldManager::ResetWorld()
     if (!World)
     {
         return;
+    }
+
+    if (UGameJamGameInstance* GameInstance = Cast<UGameJamGameInstance>(World->GetGameInstance()))
+    {
+        GameInstance->IncrementLoopCount();
     }
 
     StopGlobalTimedSolidCycle();
