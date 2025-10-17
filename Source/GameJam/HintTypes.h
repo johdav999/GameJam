@@ -44,4 +44,8 @@ struct FHintData
     /** Loop number when the hint becomes known if it starts as a future memory. */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hint")
     int32 LoopToUnlock;
+
+    /** Optional dialog audio assets that should play when the hint is triggered. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hint")
+    TArray<FString> DialogAudio;
 };
