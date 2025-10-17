@@ -54,6 +54,14 @@ public:
     UFUNCTION(BlueprintCallable, Category = "World Shift")
     void ShiftToPreviousWorld();
 
+    /** Restores the active world and player state to the solid world baseline. */
+    UFUNCTION(BlueprintCallable, Category = "World Shift|Reset")
+    void ResetWorld();
+
+    /** Assigns the checkpoint used when ResetWorld is executed. */
+    UFUNCTION(BlueprintCallable, Category = "World Shift|Reset")
+    void SetResetCheckpoint(AActor* NewCheckpoint);
+
     /** Broadcast when the world changes. */
     UPROPERTY(BlueprintAssignable, Category = "World Shift")
     FOnWorldShifted OnWorldShifted;
@@ -132,6 +140,14 @@ private:
     /** Starting world configured in the editor. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift", meta = (AllowPrivateAccess = "true"))
     EWorldState StartingWorld;
+
+    /** Optional default spawn reference used when resetting the world. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Reset", meta = (AllowPrivateAccess = "true"))
+    TObjectPtr<AActor> DefaultResetSpawnPoint;
+
+    /** Runtime checkpoint that overrides the default spawn reference. */
+    UPROPERTY(VisibleInstanceOnly, Category = "World Shift|Reset", meta = (AllowPrivateAccess = "true"))
+    TWeakObjectPtr<AActor> ActiveResetCheckpoint;
 
     /** Currently active music component. */
     TWeakObjectPtr<UAudioComponent> ActiveMusicComponent;
