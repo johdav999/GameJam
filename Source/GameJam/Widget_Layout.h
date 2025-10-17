@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "HintTypes.h"
 #include "Widget_Layout.generated.h"
 
 class UWidget_HealthBar;
@@ -41,9 +42,23 @@ public:
     UFUNCTION(BlueprintImplementableEvent, Category = "Loop")
     void OnLoopCountUpdated(int32 NewLoopCount);
 
+    /** Called when an individual hint is added or changes state. */
+    UFUNCTION(BlueprintImplementableEvent, Category = "Hints")
+    void OnHintUpdated(const FHintData& UpdatedHint);
+
+    /** Called when the collection of hints changes and needs refreshing. */
+    UFUNCTION(BlueprintImplementableEvent, Category = "Hints")
+    void OnHintsRefreshed();
+
 private:
     UFUNCTION()
     void HandleLoopCountChanged(int32 NewLoopCount);
+
+    UFUNCTION()
+    void HandleHintChanged(const FHintData& UpdatedHint);
+
+    UFUNCTION()
+    void HandleHintCollectionChanged();
 
     /** Cached pointer to the game instance we registered with. */
     TWeakObjectPtr<UGameJamGameInstance> ObservedGameInstance;
