@@ -4,6 +4,11 @@
 #include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Controller.h"
+#include "GameFramework/MovementComponent.h"
+#include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "Sound/SoundSubmix.h"
@@ -138,6 +143,83 @@ void AWorldManager::ShiftToNextWorld()
 void AWorldManager::ShiftToPreviousWorld()
 {
     CycleWorld(-1);
+}
+
+void AWorldManager::SetResetCheckpoint(AActor* NewCheckpoint)
+{
+    if (NewCheckpoint && NewCheckpoint->GetWorld() != GetWorld())
+    {
+        return;
+    }
+
+    ActiveResetCheckpoint = NewCheckpoint;
+}
+
+void AWorldManager::ResetWorld()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    StopGlobalTimedSolidCycle();
+
+    bGlobalTimedSolid = true;
+    OnTimedSolidPhaseChanged.Broadcast(bGlobalTimedSolid);
+
+    CurrentWorld = EWorldState::Light;
+    ApplyWorldFeedback(CurrentWorld);
+    OnWorldShifted.Broadcast(CurrentWorld);
+
+    APawn* PlayerPawn = UGameplayStatics::GetPlayerPawn(World, 0);
+    if (PlayerPawn)
+    {
+        AActor* SpawnActor = ActiveResetCheckpoint.IsValid() ? ActiveResetCheckpoint.Get() : nullptr;
+        if (!SpawnActor && DefaultResetSpawnPoint)
+        {
+            SpawnActor = DefaultResetSpawnPoint.Get();
+        }
+        if (!SpawnActor)
+        {
+            SpawnActor = UGameplayStatics::GetActorOfClass(World, APlayerStart::StaticClass());
+        }
+
+        FTransform SpawnTransform = PlayerPawn->GetActorTransform();
+        if (SpawnActor)
+        {
+            SpawnTransform = SpawnActor->GetActorTransform();
+        }
+
+        const FVector SpawnLocation = SpawnTransform.GetLocation();
+        const FRotator SpawnRotation = SpawnTransform.GetRotation().Rotator();
+
+        if (ACharacter* Character = Cast<ACharacter>(PlayerPawn))
+        {
+            Character->TeleportTo(SpawnLocation, SpawnRotation, false, true);
+
+            if (UCharacterMovementComponent* MovementComponent = Character->GetCharacterMovement())
+            {
+                MovementComponent->StopMovementImmediately();
+            }
+        }
+        else
+        {
+            PlayerPawn->SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::TeleportPhysics);
+
+            if (UMovementComponent* Movement = PlayerPawn->GetMovementComponent())
+            {
+                Movement->StopMovementImmediately();
+            }
+        }
+
+        if (AController* Controller = PlayerPawn->GetController())
+        {
+            Controller->SetControlRotation(SpawnRotation);
+        }
+    }
+
+    StartGlobalTimedSolidCycle();
 }
 
 void AWorldManager::ApplyWorldFeedback(EWorldState NewWorld)
