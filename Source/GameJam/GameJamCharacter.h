@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Logging/LogMacros.h"
 #include "TimerManager.h"
 #include "WorldShiftTypes.h"
@@ -82,6 +83,8 @@ protected:
 
         /** Initialize input action bindings */
         virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+        virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 protected:
 
@@ -162,5 +165,27 @@ private:
 
         /** Restores player control after the intro sequence. */
         void RestoreControlAfterIntro();
+
+        /** Delay applied before triggering a world reset after falling begins. */
+        UPROPERTY(EditAnywhere, Category="World Shift|Falling", meta = (ClampMin = "0.0"))
+        float FallingResetDelay = 1.0f;
+
+        /** Tracks whether a reset has already been queued while falling. */
+        bool bFallingResetTimerActive = false;
+
+        /** Timer used to delay the world reset after a fall is detected. */
+        FTimerHandle FallingResetTimerHandle;
+
+        /** Handles movement mode changes to detect the start/end of falls. */
+        void HandleMovementModeChanged(ACharacter* InCharacter, EMovementMode PreviousMovementMode, uint8 PreviousCustomMode);
+
+        /** Starts the delayed world reset process. */
+        void StartFallingResetTimer();
+
+        /** Cancels the delayed world reset when the character recovers. */
+        void CancelFallingResetTimer();
+
+        /** Executes when the falling reset delay expires. */
+        void HandleFallingResetTimerElapsed();
 };
 
