@@ -65,6 +65,10 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Hints")
     void ClearHintsOnReset();
 
+    /** Removes every hint regardless of persistence and saves the cleared state. */
+    UFUNCTION(BlueprintCallable, Category = "Hints")
+    void ClearAllHints();
+
     /** Evaluates future hints and reveals them when their loop threshold is met. */
     UFUNCTION(BlueprintCallable, Category = "Hints")
     void CheckFutureHints(int32 CurrentLoop);
