@@ -131,6 +131,23 @@ void AGameJamCharacter::BeginPlay()
                         Manager->OnWorldShifted.AddDynamic(this, &AGameJamCharacter::HandleWorldShifted);
                 }
         }
+
+        if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+        {
+                Movement->MovementModeChangedDelegate.AddUObject(this, &AGameJamCharacter::HandleMovementModeChanged);
+        }
+}
+
+void AGameJamCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+        if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+        {
+                Movement->MovementModeChangedDelegate.RemoveAll(this);
+        }
+
+        CancelFallingResetTimer();
+
+        Super::EndPlay(EndPlayReason);
 }
 
 void AGameJamCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -223,6 +240,87 @@ void AGameJamCharacter::HandleWorldShifted(EWorldState NewWorld)
         {
                 constexpr float WorldShiftPenalty = 10.0f;
                 HealthComponent->ApplyDamage(WorldShiftPenalty);
+        }
+}
+
+void AGameJamCharacter::HandleMovementModeChanged(ACharacter* InCharacter, EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+{
+        if (InCharacter != this)
+        {
+                return;
+        }
+
+        if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+        {
+                const bool bNowFalling = Movement->IsFalling();
+
+                if (bNowFalling)
+                {
+                        if (PreviousMovementMode != MOVE_Falling && Movement->Velocity.Z <= 0.0f)
+                        {
+                                StartFallingResetTimer();
+                        }
+                }
+                else
+                {
+                        CancelFallingResetTimer();
+                }
+        }
+}
+
+void AGameJamCharacter::StartFallingResetTimer()
+{
+        if (bFallingResetTimerActive)
+        {
+                return;
+        }
+
+        if (FallingResetDelay <= 0.0f)
+        {
+                HandleFallingResetTimerElapsed();
+                return;
+        }
+
+        if (UWorld* World = GetWorld())
+        {
+                bFallingResetTimerActive = true;
+                World->GetTimerManager().SetTimer(FallingResetTimerHandle, this, &AGameJamCharacter::HandleFallingResetTimerElapsed, FallingResetDelay, false);
+        }
+}
+
+void AGameJamCharacter::CancelFallingResetTimer()
+{
+        if (!bFallingResetTimerActive)
+        {
+                return;
+        }
+
+        if (UWorld* World = GetWorld())
+        {
+                World->GetTimerManager().ClearTimer(FallingResetTimerHandle);
+        }
+
+        bFallingResetTimerActive = false;
+}
+
+void AGameJamCharacter::HandleFallingResetTimerElapsed()
+{
+        bFallingResetTimerActive = false;
+
+        if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+        {
+                if (!Movement->IsFalling())
+                {
+                        return;
+                }
+        }
+
+        if (UWorld* World = GetWorld())
+        {
+                if (AWorldManager* Manager = AWorldManager::Get(World))
+                {
+                        Manager->ResetWorld();
+                }
         }
 }
 
