@@ -28,7 +28,6 @@ UDialogAudioComponent::UDialogAudioComponent()
         AudioComponent->bIsUISound = false;
         AudioComponent->bOverrideAttenuation = true;
         AudioComponent->bAutoDestroy = false;
-        AudioComponent->bUseReverbVolumes = true;
         AudioComponent->OnAudioFinished.AddDynamic(this, &UDialogAudioComponent::HandleAudioFinished);
     }
 
@@ -49,6 +48,7 @@ UDialogAudioComponent::UDialogAudioComponent()
     QueueGapSeconds = 0.2f;
     bQueueActive = false;
     bDuckingActive = false;
+    bPendingLoopingState = false;
 
     FallbackAttenuation = FSoundAttenuationSettings();
     FallbackAttenuation.bAttenuate = true;
@@ -290,11 +290,8 @@ void UDialogAudioComponent::ApplyAudioSettings()
     AudioComponent->Priority = Priority;
     AudioComponent->SetVolumeMultiplier(VolumeMultiplier);
     AudioComponent->SetPitchMultiplier(PitchMultiplier);
-    AudioComponent->bEnableOcclusionChecks = bEnableOcclusion;
-    AudioComponent->OcclusionTraceChannel = ECC_Visibility;
     AudioComponent->bUseAttachParentBound = true;
     AudioComponent->bAllowSpatialization = true;
-    AudioComponent->bUseReverbVolumes = true;
 
     if (SoundClassOverride)
     {
@@ -307,17 +304,24 @@ void UDialogAudioComponent::ApplyAudioSettings()
         AudioComponent->ConcurrencySet.Add(ConcurrencySettings);
     }
 
+    FSoundAttenuationSettings EffectiveAttenuation;
+
     if (AttenuationSettings)
     {
-        AudioComponent->AttenuationSettings = AttenuationSettings;
-        AudioComponent->bOverrideAttenuation = false;
+        EffectiveAttenuation = AttenuationSettings->Attenuation;
     }
     else
     {
         FallbackAttenuation.FalloffDistance = DefaultMaxDistance;
-        AudioComponent->bOverrideAttenuation = true;
-        AudioComponent->AttenuationOverrides = FallbackAttenuation;
+        EffectiveAttenuation = FallbackAttenuation;
     }
+
+    EffectiveAttenuation.bEnableOcclusion = bEnableOcclusion;
+    EffectiveAttenuation.OcclusionTraceChannel = ECC_Visibility;
+
+    AudioComponent->AttenuationSettings = AttenuationSettings;
+    AudioComponent->AttenuationOverrides = EffectiveAttenuation;
+    AudioComponent->bOverrideAttenuation = true;
 }
 
 void UDialogAudioComponent::InternalPlaySound(USoundBase* Sound, float FadeInTime, float StartTime, bool bIsDialogue, float SubtitleDurationOverride, const FText& Subtitle, bool bFromQueue)
@@ -346,8 +350,13 @@ void UDialogAudioComponent::InternalPlaySound(USoundBase* Sound, float FadeInTim
     AudioComponent->SetSound(Sound);
     AudioComponent->bIsUISound = false;
     AudioComponent->bAutoDestroy = bAutoDestroyOnFinish;
-    const bool bShouldLoop = bFromQueue ? AudioComponent->bLooping : false;
-    AudioComponent->bLooping = bShouldLoop;
+    if (!bFromQueue)
+    {
+        bPendingLoopingState = false;
+    }
+
+    const bool bShouldLoop = bFromQueue ? bPendingLoopingState : false;
+    AudioComponent->SetLooping(bShouldLoop);
 
     ApplyAudioSettings();
 
@@ -492,7 +501,7 @@ void UDialogAudioComponent::PlayNextQueuedLine()
     }
 
     const bool bIsLastLine = (QueueIndex >= QueuedLines.Num());
-    AudioComponent->bLooping = bLoopLast && bIsLastLine;
+    bPendingLoopingState = bLoopLast && bIsLastLine;
 
     InternalPlaySound(Sound, 0.05f, 0.f, true, -1.f, FText(), true);
 
@@ -513,6 +522,7 @@ void UDialogAudioComponent::ClearQueue()
     bQueueActive = false;
     QueuedLines.Reset();
     QueueIndex = 0;
+    bPendingLoopingState = false;
 
     if (UWorld* World = GetWorld())
     {

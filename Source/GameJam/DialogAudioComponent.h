@@ -154,6 +154,9 @@ protected:
     void HandleAudioFinished();
 
 protected:
+    /** Pending looping state that should be applied on the next playback. */
+    bool bPendingLoopingState;
+
     /** Spatialized audio component used for playback. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dialogue|Audio", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<UAudioComponent> AudioComponent;
