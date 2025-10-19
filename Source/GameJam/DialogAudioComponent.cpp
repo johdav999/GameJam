@@ -6,7 +6,7 @@
 #include "Engine/EngineTypes.h"
 #include "GameJamGameInstance.h"
 #include "HintTypes.h"
-#include "GameFramework/PlayerCameraManager.h"
+//#include "GameFramework/PlayerCameraManager.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
@@ -639,4 +639,3 @@ USoundBase* UDialogAudioComponent::ResolveSound(TSoftObjectPtr<USoundBase> Sound
     return LoadedSound;
 }
 
-*** End of File

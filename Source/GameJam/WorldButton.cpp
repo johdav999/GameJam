@@ -218,7 +218,7 @@ void AWorldButton::InitializeWorldBehaviorDefaults()
     for (EWorldState World : GAllWorldStates)
     {
         const bool bSolid = SolidWorlds.Contains(World);
-        WorldShiftBehavior->WorldBehaviors.Add(World, bSolid ? EPlatformState::Solid : EPlatformState::Ghost);
+      //  WorldShiftBehavior->WorldBehaviors.Add(World, bSolid ? EPlatformState::Solid : EPlatformState::Ghost);
     }
 }
 
@@ -476,7 +476,7 @@ void AWorldButton::HandleWorldShiftStateChanged(EPlatformState NewState, EWorldS
     }
     else
     {
-        bIsInteractable = (NewState == EPlatformState::Solid);
+      //  bIsInteractable = (NewState == EPlatformState::Solid);
     }
 
     RefreshButtonVisuals();
