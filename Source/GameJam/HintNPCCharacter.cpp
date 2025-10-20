@@ -3,7 +3,7 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimationAsset.h"
 #include "Animation/AnimSingleNodeInstance.h"
-#include "GameFramework/SkeletalMeshComponent.h"
+//#include "GameFramework/SkeletalMeshComponent.h"
 #include "HintNPCAIController.h"
 
 AHintNPCCharacter::AHintNPCCharacter()

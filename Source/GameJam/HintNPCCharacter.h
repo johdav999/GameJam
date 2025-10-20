@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "GameJamCharacter.h"
 #include "HintNPCCharacter.generated.h"
 
 class UAnimationAsset;
@@ -9,7 +10,7 @@ class UAnimInstance;
 class AHintNPCAIController;
 
 UCLASS(Blueprintable, BlueprintType)
-class GAMEJAM_API AHintNPCCharacter : public ACharacter
+class GAMEJAM_API AHintNPCCharacter : public AGameJamCharacter
 {
     GENERATED_BODY()
 
