@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "AITypes.h"
-#include "Delegates/Delegate.h"
 #include "HintNPCSpawner.generated.h"
 
 class UBoxComponent;
@@ -54,6 +53,4 @@ protected:
     TWeakObjectPtr<AAIController> ActiveNPCController;
 
     FAIRequestID ActiveMoveRequestID;
-
-    FDelegateHandle MoveCompletedHandle;
 };

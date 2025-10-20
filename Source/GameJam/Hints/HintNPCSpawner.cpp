@@ -126,13 +126,8 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
 
     ActiveNPCController = AIController;
 
-    if (MoveCompletedHandle.IsValid())
-    {
-        AIController->ReceiveMoveCompleted.Remove(MoveCompletedHandle);
-        MoveCompletedHandle = FDelegateHandle();
-    }
-
-    MoveCompletedHandle = AIController->ReceiveMoveCompleted.AddUObject(this, &AHintNPCSpawner::HandleMoveCompleted);
+    AIController->ReceiveMoveCompleted.RemoveAll(this);
+    AIController->ReceiveMoveCompleted.AddUObject(this, &AHintNPCSpawner::HandleMoveCompleted);
 
     FAIMoveRequest MoveRequest(TargetLocation->GetComponentLocation());
     MoveRequest.SetAcceptanceRadius(DefaultTargetAcceptanceRadius);
@@ -145,8 +140,7 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
         return;
     }
 
-    AIController->ReceiveMoveCompleted.Remove(MoveCompletedHandle);
-    MoveCompletedHandle = FDelegateHandle();
+    AIController->ReceiveMoveCompleted.RemoveAll(this);
 
     if (RequestResult.Code == EPathFollowingRequestResult::AlreadyAtGoal)
     {
@@ -180,14 +174,10 @@ void AHintNPCSpawner::CleanupActiveNPC()
 {
     if (AAIController* Controller = ActiveNPCController.Get())
     {
-        if (MoveCompletedHandle.IsValid())
-        {
-            Controller->ReceiveMoveCompleted.Remove(MoveCompletedHandle);
-        }
+        Controller->ReceiveMoveCompleted.RemoveAll(this);
     }
 
     ActiveNPC.Reset();
     ActiveNPCController.Reset();
     ActiveMoveRequestID = FAIRequestID::InvalidRequest;
-    MoveCompletedHandle = FDelegateHandle();
 }
