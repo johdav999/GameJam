@@ -18,6 +18,7 @@ class UWorldShiftEffectsComponent;
 class UHealthComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractInputSignature);
 
 /**
  *  A simple player-controllable third person character
@@ -66,6 +67,10 @@ protected:
         UPROPERTY(EditAnywhere, Category="Input")
         UInputAction* CycleWorldAction;
 
+        /** Interact Input Action */
+        UPROPERTY(EditAnywhere, Category="Input")
+        UInputAction* InteractAction;
+
 public:
 
         /** Constructor */
@@ -74,6 +79,10 @@ public:
         /** Starts the automatic world introduction sequence. */
         UFUNCTION(BlueprintCallable, Category="World Shift|Intro")
         void StartIntroWorldSequence();
+
+        /** Broadcast whenever the interact input is triggered. */
+        UPROPERTY(BlueprintAssignable, Category="Input|Interact")
+        FOnInteractInputSignature OnInteract;
 
 protected:
 
@@ -99,6 +108,9 @@ protected:
         /** Cycles through the available world states. */
         void CycleWorld(const FInputActionValue& Value);
 
+        /** Called for interact input. */
+        void Interact(const FInputActionValue& Value);
+
         /** Applies the health penalty whenever the active world changes. */
         UFUNCTION()
         void HandleWorldShifted(EWorldState NewWorld);
@@ -117,9 +129,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpStart();
 
-	/** Handles jump pressed inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpEnd();
+        /** Handles jump pressed inputs from either controls or UI interfaces */
+        UFUNCTION(BlueprintCallable, Category="Input")
+        virtual void DoJumpEnd();
+
+        /** Handles interact inputs from either controls or UI interfaces */
+        UFUNCTION(BlueprintCallable, Category="Input")
+        virtual void DoInteract();
 
 
 public:

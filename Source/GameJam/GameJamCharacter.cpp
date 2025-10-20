@@ -158,6 +158,9 @@ void AGameJamCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
                 // World shifting
                 EnhancedInputComponent->BindAction(CycleWorldAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::CycleWorld);
+
+                // Interacting
+                EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Interact);
         }
         else
         {
@@ -216,6 +219,16 @@ void AGameJamCharacter::CycleWorld(const FInputActionValue& Value)
                         WorldManager->SetWorld(NewWorld);
                 }
         }
+}
+
+void AGameJamCharacter::Interact(const FInputActionValue& Value)
+{
+        if (!Value.IsNonZero())
+        {
+                return;
+        }
+
+        DoInteract();
 }
 
 void AGameJamCharacter::HandleWorldShifted(EWorldState NewWorld)
@@ -408,8 +421,13 @@ void AGameJamCharacter::DoJumpStart()
 
 void AGameJamCharacter::DoJumpEnd()
 {
-	// signal the character to stop jumping
-	StopJumping();
+        // signal the character to stop jumping
+        StopJumping();
+}
+
+void AGameJamCharacter::DoInteract()
+{
+        OnInteract.Broadcast();
 }
 void AGameJamCharacter::Tick(float DeltaSeconds)
 {
