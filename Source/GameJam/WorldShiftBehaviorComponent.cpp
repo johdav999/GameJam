@@ -327,7 +327,7 @@ void UWorldShiftBehaviorComponent::ApplyMaterial(UMaterialInterface* Material) c
     }
 
     const int32 MaterialCount = TargetMesh->GetNumMaterials();
-    for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
+    for (int32 MaterialIndex = 0; MaterialIndex < 1; ++MaterialIndex)
     {
         TargetMesh->SetMaterial(MaterialIndex, Material);
     }

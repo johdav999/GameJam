@@ -356,7 +356,8 @@ void UDialogAudioComponent::InternalPlaySound(USoundBase* Sound, float FadeInTim
     }
 
     const bool bShouldLoop = bFromQueue ? bPendingLoopingState : false;
-    AudioComponent->SetLooping(bShouldLoop);
+   // AudioComponent->SetLooping(bShouldLoop);
+   
 
     ApplyAudioSettings();
 
