@@ -16,6 +16,7 @@ class UInputAction;
 struct FInputActionValue;
 class UWorldShiftEffectsComponent;
 class UHealthComponent;
+class UDialogAudioComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInteractInputSignature);
@@ -44,6 +45,10 @@ class AGameJamCharacter : public ACharacter
         /** Handles player health state and broadcasts updates */
         UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
         UHealthComponent* HealthComponent;
+
+        /** Handles spatialized playback for character dialogue. */
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+        UDialogAudioComponent* DialogAudioComponent;
 	
 protected:
 
@@ -148,6 +153,9 @@ public:
 
         /** Returns HealthComponent subobject **/
         FORCEINLINE class UHealthComponent* GetHealthComponent() const { return HealthComponent; }
+
+        /** Returns DialogAudioComponent subobject **/
+        FORCEINLINE class UDialogAudioComponent* GetDialogAudioComponent() const { return DialogAudioComponent; }
 
 private:
         /** Tracks whether the initial world state notification has been received. */
