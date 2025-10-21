@@ -25,9 +25,15 @@ public class GameJam : ModuleRules
                                 "Niagara"
                         });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
 
-		PublicIncludePaths.AddRange(new string[] {
+        PrivateDependencyModuleNames.AddRange(new string[] {
+            // Add these:
+            "AIModule",
+            "GameplayTasks",
+            "NavigationSystem"
+        });
+
+        PublicIncludePaths.AddRange(new string[] {
 			"GameJam",
 			"GameJam/Variant_Platforming",
 			"GameJam/Variant_Platforming/Animation",

@@ -2,14 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "AIController.h"
 #include "AITypes.h"
+#include "Navigation/PathFollowingComponent.h"
 #include "HintNPCSpawner.generated.h"
 
 class UBoxComponent;
 class UPrimitiveComponent;
 class AAIController;
 class AHintNPCCharacter;
-struct FPathFollowingResult;
 
 UCLASS(Blueprintable, BlueprintType)
 class GAMEJAM_API AHintNPCSpawner : public AActor
@@ -25,7 +26,8 @@ protected:
     UFUNCTION()
     void HandleTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-    void HandleMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result);
+ /*   UFUNCTION()
+    void HandleMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult* Result);*/
 
     void CleanupActiveNPC();
 

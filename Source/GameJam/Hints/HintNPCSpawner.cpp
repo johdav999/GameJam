@@ -127,7 +127,7 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
     ActiveNPCController = AIController;
 
     AIController->ReceiveMoveCompleted.RemoveAll(this);
-    AIController->ReceiveMoveCompleted.AddUObject(this, &AHintNPCSpawner::HandleMoveCompleted);
+   // AIController->ReceiveMoveCompleted.AddDynamic(this, &AHintNPCSpawner::HandleMoveCompleted);
 
     FAIMoveRequest MoveRequest(TargetLocation->GetComponentLocation());
     MoveRequest.SetAcceptanceRadius(DefaultTargetAcceptanceRadius);
@@ -149,26 +149,26 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
     else
     {
         UE_LOG(LogTemp, Warning, TEXT("HintNPCSpawner '%s' failed to move NPC '%s' to target. Result code: %d"), *GetName(), *SpawnedNPC->GetName(), static_cast<int32>(RequestResult.Code));
-        SpawnedNPC->Destroy();
+       // SpawnedNPC->Destroy();
     }
 
     CleanupActiveNPC();
 }
 
-void AHintNPCSpawner::HandleMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
-{
-    if (!ActiveNPCController.IsValid() || RequestID != ActiveMoveRequestID)
-    {
-        return;
-    }
-
-    if (Result.IsSuccess() && ActiveNPC.IsValid())
-    {
-        ActiveNPC->Destroy();
-    }
-
-    CleanupActiveNPC();
-}
+//void AHintNPCSpawner::HandleMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+//{
+//    if (!ActiveNPCController.IsValid() || RequestID != ActiveMoveRequestID)
+//    {
+//        return;
+//    }
+//
+//    if (Result.IsSuccess() && ActiveNPC.IsValid())
+//    {
+//        ActiveNPC->Destroy();
+//    }
+//
+//    CleanupActiveNPC();
+//}
 
 void AHintNPCSpawner::CleanupActiveNPC()
 {
