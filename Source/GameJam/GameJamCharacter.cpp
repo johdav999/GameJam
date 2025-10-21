@@ -17,6 +17,7 @@
 #include "WorldManager.h"
 #include "WorldShiftEffectsComponent.h"
 #include "HealthComponent.h"
+#include "DialogAudioComponent.h"
 #include "TimerManager.h"
 
 AGameJamCharacter::AGameJamCharacter()
@@ -74,6 +75,9 @@ AGameJamCharacter::AGameJamCharacter()
 
         // Create the health component responsible for managing player health
         HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+
+        // Create the dialog audio component responsible for playing character dialogue
+        DialogAudioComponent = CreateDefaultSubobject<UDialogAudioComponent>(TEXT("DialogAudioComponent"));
 
         // Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character)
         // are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
