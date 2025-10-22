@@ -114,7 +114,6 @@ void AGameJamCharacter::StartIntroWorldSequence()
                 }
 
                 FTimerManager& TimerManager = World->GetTimerManager();
-                TimerManager.SetTimer(IntroDreamTimerHandle, this, &AGameJamCharacter::HandleIntroDreamTransition, 5.0f, false);
                 TimerManager.SetTimer(IntroLightTimerHandle, this, &AGameJamCharacter::HandleIntroLightTransition, 10.0f, false);
         }
 }
@@ -161,7 +160,8 @@ void AGameJamCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
                 EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Look);
 
                 // World shifting
-                EnhancedInputComponent->BindAction(CycleWorldAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::CycleWorld);
+                EnhancedInputComponent->BindAction(ShiftWorldAction, ETriggerEvent::Started, this, &AGameJamCharacter::OnShiftPressed);
+                EnhancedInputComponent->BindAction(ShiftWorldAction, ETriggerEvent::Completed, this, &AGameJamCharacter::OnShiftReleased);
 
                 // Interacting
                 EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &AGameJamCharacter::Interact);
@@ -190,37 +190,40 @@ void AGameJamCharacter::Look(const FInputActionValue& Value)
         DoLook(LookAxisVector.X, LookAxisVector.Y);
 }
 
-void AGameJamCharacter::CycleWorld(const FInputActionValue& Value)
+void AGameJamCharacter::OnShiftPressed()
 {
         if (!bManualWorldShiftEnabled)
         {
+                bChaosShiftActive = false;
                 return;
         }
 
-        const float AxisValue = Value.Get<float>();
-        if (FMath::IsNearlyZero(AxisValue))
-        {
-                return;
-        }
+        bChaosShiftActive = false;
 
         if (UWorld* World = GetWorld())
         {
-                if (AWorldManager* WorldManager = AWorldManager::Get(World))
+                if (AWorldManager* Manager = AWorldManager::Get(World))
                 {
-                        const int32 NumWorlds = static_cast<int32>(EWorldState::Chaos) + 1;
-                        int32 CurrentIndex = static_cast<int32>(WorldManager->GetCurrentWorld());
+                        Manager->SetWorld(EWorldState::Chaos);
+                        bChaosShiftActive = true;
+                }
+        }
+}
 
-                        if (AxisValue > 0.0f)
-                        {
-                                CurrentIndex = (CurrentIndex + 1) % NumWorlds;
-                        }
-                        else if (AxisValue < 0.0f)
-                        {
-                                CurrentIndex = (CurrentIndex - 1 + NumWorlds) % NumWorlds;
-                        }
+void AGameJamCharacter::OnShiftReleased()
+{
+        if (!bChaosShiftActive)
+        {
+                return;
+        }
 
-                        const EWorldState NewWorld = static_cast<EWorldState>(CurrentIndex);
-                        WorldManager->SetWorld(NewWorld);
+        bChaosShiftActive = false;
+
+        if (UWorld* World = GetWorld())
+        {
+                if (AWorldManager* Manager = AWorldManager::Get(World))
+                {
+                        Manager->SetWorld(EWorldState::Light);
                 }
         }
 }
@@ -329,23 +332,6 @@ void AGameJamCharacter::HandleFallingResetTimerElapsed()
         }
 }
 
-void AGameJamCharacter::HandleIntroDreamTransition()
-{
-        if (!bIntroSequenceActive)
-        {
-                return;
-        }
-
-        if (UWorld* World = GetWorld())
-        {
-                if (AWorldManager* Manager = AWorldManager::Get(World))
-                {
-                        // Treat the Shadow state as the Dream world for the intro sequence.
-                        Manager->SetWorld(EWorldState::Shadow);
-                }
-        }
-}
-
 void AGameJamCharacter::HandleIntroLightTransition()
 {
         if (!bIntroSequenceActive)
@@ -372,7 +358,6 @@ void AGameJamCharacter::RestoreControlAfterIntro()
         if (UWorld* World = GetWorld())
         {
                 FTimerManager& TimerManager = World->GetTimerManager();
-                TimerManager.ClearTimer(IntroDreamTimerHandle);
                 TimerManager.ClearTimer(IntroLightTimerHandle);
         }
 
