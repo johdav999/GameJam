@@ -335,11 +335,11 @@ void UDialogAudioComponent::InternalPlaySound(USoundBase* Sound, float FadeInTim
         return;
     }
 
-    if (ShouldCullPlayback(Sound))
-    {
-        UE_LOG(LogDialogAudio, Verbose, TEXT("DialogAudioComponent culled playback for '%s'."), *Sound->GetName());
-        return;
-    }
+    //if (ShouldCullPlayback(Sound))
+    //{
+    //    UE_LOG(LogDialogAudio, Verbose, TEXT("DialogAudioComponent culled playback for '%s'."), *Sound->GetName());
+    //    return;
+    //}
 
     if (!bFromQueue)
     {

@@ -38,4 +38,5 @@ void AHintNPCCharacter::BeginPlay()
             MeshComponent->Stop();
         }
     }
+    ShouldNotResetWorld = true;
 }

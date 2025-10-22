@@ -323,6 +323,7 @@ void AGameJamCharacter::HandleFallingResetTimerElapsed()
         {
                 if (AWorldManager* Manager = AWorldManager::Get(World))
                 {
+                    if(!ShouldNotResetWorld)
                         Manager->ResetWorld();
                 }
         }

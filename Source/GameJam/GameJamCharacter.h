@@ -89,6 +89,8 @@ public:
         UPROPERTY(BlueprintAssignable, Category="Input|Interact")
         FOnInteractInputSignature OnInteract;
 
+        bool ShouldNotResetWorld = false;
+
 protected:
 
         virtual void BeginPlay() override;
@@ -160,6 +162,8 @@ public:
 private:
         /** Tracks whether the initial world state notification has been received. */
         bool bReceivedInitialWorldNotification = false;
+
+
 
         /** Tracks whether manual world shifting is currently allowed. */
         bool bManualWorldShiftEnabled = true;
