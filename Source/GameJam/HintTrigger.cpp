@@ -25,7 +25,8 @@ AHintTrigger::AHintTrigger()
     RootComponent = TriggerBox;
 
     DialogAudioComponent = CreateDefaultSubobject<UDialogAudioComponent>(TEXT("DialogAudioComponent"));
-    DialogAudioComponent->SetupAttachment(RootComponent);
+
+
 
     TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AHintTrigger::HandleOverlap);
 }
