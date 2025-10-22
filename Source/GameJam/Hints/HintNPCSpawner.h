@@ -5,12 +5,14 @@
 #include "AIController.h"
 #include "AITypes.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "WorldShiftTypes.h"
 #include "HintNPCSpawner.generated.h"
 
 class UBoxComponent;
 class UPrimitiveComponent;
 class AAIController;
 class AHintNPCCharacter;
+struct FTimerHandle;
 
 UCLASS(Blueprintable, BlueprintType)
 class GAMEJAM_API AHintNPCSpawner : public AActor
@@ -25,6 +27,9 @@ protected:
 
     UFUNCTION()
     void HandleTriggerOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+    UFUNCTION()
+    void RestoreWorldState();
 
  /*   UFUNCTION()
     void HandleMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult* Result);*/
@@ -55,4 +60,10 @@ protected:
     TWeakObjectPtr<AAIController> ActiveNPCController;
 
     FAIRequestID ActiveMoveRequestID;
+
+    FTimerHandle ShadowWorldTimerHandle;
+
+    EWorldState PreviousWorldState;
+
+    bool bIsWorldOverrideActive;
 };
