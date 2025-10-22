@@ -100,6 +100,27 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
         return;
     }
 
+    FTimerManager& TimerManager = World->GetTimerManager();
+
+    if (AWorldManager* WorldManager = AWorldManager::Get(World))
+    {
+        const EWorldState CurrentWorld = WorldManager->GetCurrentWorld();
+
+        if (!bIsWorldOverrideActive)
+        {
+            PreviousWorldState = CurrentWorld;
+        }
+
+        bIsWorldOverrideActive = true;
+
+        UE_LOG(LogTemp, Log, TEXT("Switching to Dream World..."));
+
+        WorldManager->SetWorld(EWorldState::Shadow);
+
+        TimerManager.ClearTimer(ShadowWorldTimerHandle);
+        TimerManager.SetTimer(ShadowWorldTimerHandle, this, &AHintNPCSpawner::RestoreWorldState, DreamWorldOverrideDuration, false);
+    }
+
     const FTransform BaseTransform = GetActorTransform();
 
     const FVector SpawnLocation = BaseTransform.TransformPosition(SpawnOffset.GetLocation());
@@ -136,34 +157,12 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
         return;
     }
 
-
-    FTimerManager& TimerManager = World->GetTimerManager();
-
-    if (AWorldManager* WorldManager = AWorldManager::Get(World))
-    {
-        const EWorldState CurrentWorld = WorldManager->GetCurrentWorld();
-
-        if (!bIsWorldOverrideActive)
-        {
-            PreviousWorldState = CurrentWorld;
-        }
-
-        bIsWorldOverrideActive = true;
-
-        WorldManager->SetWorld(EWorldState::Shadow);
-
-        TimerManager.ClearTimer(ShadowWorldTimerHandle);
-        TimerManager.SetTimer(ShadowWorldTimerHandle, this, &AHintNPCSpawner::RestoreWorldState, DreamWorldOverrideDuration, false);
-    }
-
-   
-
     ActiveNPCController = AIController;
 
     SpawnedNPC->SetActorHiddenInGame(true);
     SpawnedNPC->SetActorEnableCollision(false);
 
-    UE_LOG(LogTemp, Log, TEXT("Player overlapped NPC spawner, waiting 3 seconds..."));
+    UE_LOG(LogTemp, Log, TEXT("Player overlapped NPC spawner, waiting 3 seconds before NPC moves..."));
 
     TimerManager.ClearTimer(MovementDelayTimerHandle);
     bIsMovementDelayActive = true;
@@ -232,7 +231,7 @@ void AHintNPCSpawner::BeginNPCMovement()
     SpawnedNPC->SetActorHiddenInGame(false);
     SpawnedNPC->SetActorEnableCollision(true);
 
-    UE_LOG(LogTemp, Log, TEXT("NPC starting movement."));
+    UE_LOG(LogTemp, Log, TEXT("NPC starting movement..."));
 
     AIController->ReceiveMoveCompleted.RemoveAll(this);
    // AIController->ReceiveMoveCompleted.AddDynamic(this, &AHintNPCSpawner::HandleMoveCompleted);
