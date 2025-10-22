@@ -102,25 +102,6 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
 
     const FTransform BaseTransform = GetActorTransform();
 
-    FTimerManager& TimerManager = World->GetTimerManager();
-
-    if (AWorldManager* WorldManager = AWorldManager::Get(World))
-    {
-        const EWorldState CurrentWorld = WorldManager->GetCurrentWorld();
-
-        if (!bIsWorldOverrideActive)
-        {
-            PreviousWorldState = CurrentWorld;
-        }
-
-        bIsWorldOverrideActive = true;
-
-        WorldManager->SetWorld(EWorldState::Shadow);
-
-        TimerManager.ClearTimer(ShadowWorldTimerHandle);
-        TimerManager.SetTimer(ShadowWorldTimerHandle, this, &AHintNPCSpawner::RestoreWorldState, DreamWorldOverrideDuration, false);
-    }
-
     const FVector SpawnLocation = BaseTransform.TransformPosition(SpawnOffset.GetLocation());
     const FQuat SpawnRotation = SpawnOffset.GetRotation() * BaseTransform.GetRotation();
     const FVector SpawnScale = BaseTransform.GetScale3D() * SpawnOffset.GetScale3D();
@@ -154,6 +135,28 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
         ActiveNPC.Reset();
         return;
     }
+
+
+    FTimerManager& TimerManager = World->GetTimerManager();
+
+    if (AWorldManager* WorldManager = AWorldManager::Get(World))
+    {
+        const EWorldState CurrentWorld = WorldManager->GetCurrentWorld();
+
+        if (!bIsWorldOverrideActive)
+        {
+            PreviousWorldState = CurrentWorld;
+        }
+
+        bIsWorldOverrideActive = true;
+
+        WorldManager->SetWorld(EWorldState::Shadow);
+
+        TimerManager.ClearTimer(ShadowWorldTimerHandle);
+        TimerManager.SetTimer(ShadowWorldTimerHandle, this, &AHintNPCSpawner::RestoreWorldState, DreamWorldOverrideDuration, false);
+    }
+
+   
 
     ActiveNPCController = AIController;
 
