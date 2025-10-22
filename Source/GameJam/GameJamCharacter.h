@@ -68,9 +68,9 @@ protected:
         UPROPERTY(EditAnywhere, Category="Input")
         UInputAction* MouseLookAction;
 
-        /** Cycle World Input Action */
+        /** Shift World Input Action */
         UPROPERTY(EditAnywhere, Category="Input")
-        UInputAction* CycleWorldAction;
+        UInputAction* ShiftWorldAction;
 
         /** Interact Input Action */
         UPROPERTY(EditAnywhere, Category="Input")
@@ -112,8 +112,11 @@ protected:
         /** Called for looking input */
         void Look(const FInputActionValue& Value);
 
-        /** Cycles through the available world states. */
-        void CycleWorld(const FInputActionValue& Value);
+        /** Handles entering the Chaos world when the shift input is pressed. */
+        void OnShiftPressed();
+
+        /** Handles returning to the Light world when the shift input is released. */
+        void OnShiftReleased();
 
         /** Called for interact input. */
         void Interact(const FInputActionValue& Value);
@@ -168,6 +171,9 @@ private:
         /** Tracks whether manual world shifting is currently allowed. */
         bool bManualWorldShiftEnabled = true;
 
+        /** Tracks whether the player currently has the Chaos world shift held. */
+        bool bChaosShiftActive = false;
+
         /** Tracks whether the intro sequence is currently running. */
         bool bIntroSequenceActive = false;
 
@@ -181,14 +187,8 @@ private:
         /** Cached jump Z velocity restored once the intro sequence ends. */
         float CachedJumpZVelocity = 0.0f;
 
-        /** Timer used to transition from Chaos to Dream. */
-        FTimerHandle IntroDreamTimerHandle;
-
-        /** Timer used to transition from Dream to Light. */
+        /** Timer used to transition from Chaos back to Light during the intro sequence. */
         FTimerHandle IntroLightTimerHandle;
-
-        /** Applies the Dream world during the intro sequence. */
-        void HandleIntroDreamTransition();
 
         /** Applies the Light world and restores control when the intro ends. */
         void HandleIntroLightTransition();
