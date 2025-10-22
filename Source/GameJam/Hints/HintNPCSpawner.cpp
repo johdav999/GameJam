@@ -6,10 +6,13 @@
 #include "HintNPCCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "TimerManager.h"
+#include "WorldManager.h"
 
 namespace
 {
     constexpr float DefaultTargetAcceptanceRadius = 5.0f;
+    constexpr float DreamWorldOverrideDuration = 3.0f;
 }
 
 AHintNPCSpawner::AHintNPCSpawner()
@@ -18,6 +21,8 @@ AHintNPCSpawner::AHintNPCSpawner()
     , SpawnOffset(FTransform::Identity)
     , bHasSpawned(false)
     , ActiveMoveRequestID(FAIRequestID::InvalidRequest)
+    , PreviousWorldState(EWorldState::Light)
+    , bIsWorldOverrideActive(false)
 {
     PrimaryActorTick.bCanEverTick = false;
 
@@ -89,6 +94,24 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
     }
 
     const FTransform BaseTransform = GetActorTransform();
+
+    if (AWorldManager* WorldManager = AWorldManager::Get(World))
+    {
+        const EWorldState CurrentWorld = WorldManager->GetCurrentWorld();
+
+        if (!bIsWorldOverrideActive)
+        {
+            PreviousWorldState = CurrentWorld;
+        }
+
+        bIsWorldOverrideActive = true;
+
+        WorldManager->SetWorld(EWorldState::Shadow);
+
+        FTimerManager& TimerManager = World->GetTimerManager();
+        TimerManager.ClearTimer(ShadowWorldTimerHandle);
+        TimerManager.SetTimer(ShadowWorldTimerHandle, this, &AHintNPCSpawner::RestoreWorldState, DreamWorldOverrideDuration, false);
+    }
 
     const FVector SpawnLocation = BaseTransform.TransformPosition(SpawnOffset.GetLocation());
     const FQuat SpawnRotation = SpawnOffset.GetRotation() * BaseTransform.GetRotation();
@@ -180,4 +203,22 @@ void AHintNPCSpawner::CleanupActiveNPC()
     ActiveNPC.Reset();
     ActiveNPCController.Reset();
     ActiveMoveRequestID = FAIRequestID::InvalidRequest;
+}
+
+void AHintNPCSpawner::RestoreWorldState()
+{
+    bIsWorldOverrideActive = false;
+
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        return;
+    }
+
+    World->GetTimerManager().ClearTimer(ShadowWorldTimerHandle);
+
+    if (AWorldManager* WorldManager = AWorldManager::Get(World))
+    {
+        WorldManager->SetWorld(PreviousWorldState);
+    }
 }
