@@ -2,14 +2,14 @@
 
 #include "Components/ProgressBar.h"
 
-void UWidget_HealthBar::UpdateHealth(float NewHealth, float MaxHealth)
+void UWidget_HealthBar::UpdateEffort(float NewEffort, float MaxEffort)
 {
-    if (!HealthProgress || MaxHealth <= 0.0f)
+    if (!HealthProgress || MaxEffort <= 0.0f)
     {
         return;
     }
 
-    const float Percent = FMath::Clamp(NewHealth / MaxHealth, 0.0f, 1.0f);
+    const float Percent = FMath::Clamp(NewEffort / MaxEffort, 0.0f, 1.0f);
     HealthProgress->SetPercent(Percent);
 
     FLinearColor BarColor = FLinearColor::Red;

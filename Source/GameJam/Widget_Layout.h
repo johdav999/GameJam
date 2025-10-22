@@ -9,6 +9,7 @@ class UWidget_HealthBar;
 class UWidget_WorldIndicator;
 class UWorldWidget;
 class UGameJamGameInstance;
+class UTimeShiftEffortComponent;
 
 /**
  * Root HUD layout widget that exposes references to key UI elements for blueprint wiring.
@@ -23,7 +24,7 @@ public:
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     UWidget_WorldIndicator* WorldIndicator;
 
-    /** Health display that reacts to damage inflicted by world shifts. */
+    /** Effort meter that visualizes the player's time-shift stamina. */
     UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
     UWidget_HealthBar* HealthBar;
 
@@ -59,6 +60,12 @@ private:
 
     UFUNCTION()
     void HandleHintCollectionChanged();
+
+    UFUNCTION()
+    void HandleEffortChanged(float NewEffort);
+
+    /** Cached pointer to the active effort component. */
+    TWeakObjectPtr<UTimeShiftEffortComponent> ObservedEffortComponent;
 
     /** Cached pointer to the game instance we registered with. */
     TWeakObjectPtr<UGameJamGameInstance> ObservedGameInstance;

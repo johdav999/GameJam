@@ -2,7 +2,7 @@
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "HealthComponent.h"
+#include "TimeShiftEffortComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "WorldShiftBehaviorComponent.h"
@@ -53,9 +53,9 @@ void AHealthPickup::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* 
         return;
     }
 
-    if (UHealthComponent* HealthComp = OtherActor->FindComponentByClass<UHealthComponent>())
+    if (UTimeShiftEffortComponent* EffortComp = OtherActor->FindComponentByClass<UTimeShiftEffortComponent>())
     {
-        const bool bChanged = HealthComp->Heal(HealthAmount);
+        const bool bChanged = EffortComp->ModifyEffort(EffortAmount);
 
         if (bChanged)
         {

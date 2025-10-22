@@ -2,11 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "HealthComponent.h"
 #include "WorldShiftTypes.h"
 #include "WorldShiftEffectsComponent.generated.h"
 
-class UHealthComponent;
 class USoundBase;
 class UNiagaraComponent;
 class UNiagaraSystem;
@@ -24,14 +22,6 @@ class GAMEJAM_API UWorldShiftEffectsComponent : public UActorComponent
 
 public:
     UWorldShiftEffectsComponent();
-
-    /** Prefer explicit binding in editor/Blueprint. */
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health")
-    TObjectPtr<UHealthComponent> HealthComponent = nullptr;
-
-    /** Health cost applied every time the player performs a world shift. */
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Health")
-    float HealthCostPerSwitch = 5.f;
 
     /** Audio cues to play when shifting into a specific world. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "World Shift|Audio")
@@ -57,8 +47,6 @@ public:
     void OnNiagaraEffectFinished(UNiagaraComponent* FinishedComponent);
 
 protected:
-    virtual void BeginPlay() override;
-
     /** Starts a short-lived post process flash that fades away over time. */
     UFUNCTION(BlueprintCallable, Category = "World Shift|Effects")
     void StartPostProcessFlash(FLinearColor FlashColor);
@@ -71,13 +59,4 @@ public:
     /** Event fired whenever a world shift effect is triggered. */
     UPROPERTY(BlueprintAssignable, Category = "World Shift|Events")
     FOnWorldShiftTriggered OnWorldShiftTriggered;
-
-    /** Event fired after health has been drained by a world shift. */
-    UPROPERTY(BlueprintAssignable, Category = "Health")
-    FOnHealthChanged OnHealthDrained;
-
-private:
-    bool ApplyHealthCost(float& OutNewHealth, float& OutMaxHealth);
-
-    UHealthComponent* FindHealthComponentOnOwner() const;
 };

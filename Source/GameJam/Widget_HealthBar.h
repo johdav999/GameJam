@@ -15,12 +15,12 @@ class GAMEJAM_API UWidget_HealthBar : public UUserWidget
     GENERATED_BODY()
 
 public:
-    /** Progress bar representing the player's current health percentage. */
+    /** Progress bar representing the player's current effort percentage. */
     UPROPERTY(BlueprintReadWrite, meta = (BindWidgetOptional))
     UProgressBar* HealthProgress;
 
-    /** Updates the progress bar and color based on the provided health values. */
+    /** Updates the progress bar and color based on the provided effort values. */
     UFUNCTION(BlueprintCallable)
-    void UpdateHealth(float NewHealth, float MaxHealth);
+    void UpdateEffort(float NewEffort, float MaxEffort);
 };
 

@@ -13,7 +13,7 @@ class UNiagaraSystem;
 class UNiagaraComponent;
 class USoundBase;
 class UAudioComponent;
-class UHealthComponent;
+class UTimeShiftEffortComponent;
 
 UCLASS()
 class GAMEJAM_API AHazard : public AActor
@@ -45,9 +45,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio")
     TObjectPtr<USoundBase> ActiveSound;
 
-    /** Damage applied to player */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
-    float DamageAmount = 20.f;
+    /** Effort removed when the hazard is triggered. */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TimeShift")
+    float EffortDrain = 20.f;
 
     /** Whether damage applies continuously (every second) or once on touch */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
