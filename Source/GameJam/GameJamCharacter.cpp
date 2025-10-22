@@ -16,7 +16,7 @@
 #include "GameJam.h"
 #include "WorldManager.h"
 #include "WorldShiftEffectsComponent.h"
-#include "HealthComponent.h"
+#include "TimeShiftEffortComponent.h"
 #include "DialogAudioComponent.h"
 #include "TimerManager.h"
 
@@ -73,8 +73,8 @@ AGameJamCharacter::AGameJamCharacter()
         // Create the world shift effects component responsible for audiovisual feedback
         WorldShiftEffects = CreateDefaultSubobject<UWorldShiftEffectsComponent>(TEXT("WorldShiftEffects"));
 
-        // Create the health component responsible for managing player health
-        HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComponent"));
+        // Create the effort component responsible for managing Chaos sustain
+        TimeShiftEffortComponent = CreateDefaultSubobject<UTimeShiftEffortComponent>(TEXT("TimeShiftEffortComponent"));
 
         // Create the dialog audio component responsible for playing character dialogue
         DialogAudioComponent = CreateDefaultSubobject<UDialogAudioComponent>(TEXT("DialogAudioComponent"));
@@ -240,16 +240,9 @@ void AGameJamCharacter::Interact(const FInputActionValue& Value)
 
 void AGameJamCharacter::HandleWorldShifted(EWorldState NewWorld)
 {
-        if (!bReceivedInitialWorldNotification)
+        if (NewWorld == EWorldState::Light)
         {
-                bReceivedInitialWorldNotification = true;
-                return;
-        }
-
-        if (HealthComponent)
-        {
-                constexpr float WorldShiftPenalty = 10.0f;
-                HealthComponent->ApplyDamage(WorldShiftPenalty);
+                bChaosShiftActive = false;
         }
 }
 

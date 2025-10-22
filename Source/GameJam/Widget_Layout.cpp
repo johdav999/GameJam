@@ -5,9 +5,8 @@
 
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
-#include "HealthComponent.h"
+#include "TimeShiftEffortComponent.h"
 #include "Widget_HealthBar.h"
-#include "WorldShiftEffectsComponent.h"
 
 void UWidget_Layout::NativeConstruct()
 {
@@ -28,21 +27,14 @@ void UWidget_Layout::NativeConstruct()
         {
             if (APawn* Pawn = OwningController->GetPawn())
             {
-                if (UWorldShiftEffectsComponent* Effects = Pawn->FindComponentByClass<UWorldShiftEffectsComponent>())
+                if (UTimeShiftEffortComponent* EffortComponent = Pawn->FindComponentByClass<UTimeShiftEffortComponent>())
                 {
-                    if (!Effects->OnHealthDrained.IsAlreadyBound(HealthBar, &UWidget_HealthBar::UpdateHealth))
+                    ObservedEffortComponent = EffortComponent;
+                    if (!EffortComponent->OnEffortChanged.IsAlreadyBound(this, &UWidget_Layout::HandleEffortChanged))
                     {
-                        Effects->OnHealthDrained.AddDynamic(HealthBar, &UWidget_HealthBar::UpdateHealth);
+                        EffortComponent->OnEffortChanged.AddDynamic(this, &UWidget_Layout::HandleEffortChanged);
                     }
-                }
-
-                if (UHealthComponent* HealthComponent = Pawn->FindComponentByClass<UHealthComponent>())
-                {
-                    if (!HealthComponent->OnHealthChanged.IsAlreadyBound(HealthBar, &UWidget_HealthBar::UpdateHealth))
-                    {
-                        HealthComponent->OnHealthChanged.AddDynamic(HealthBar, &UWidget_HealthBar::UpdateHealth);
-                    }
-                    HealthBar->UpdateHealth(HealthComponent->GetHealth(), HealthComponent->GetMaxHealth());
+                    HandleEffortChanged(EffortComponent->GetCurrentEffort());
                 }
             }
         }
@@ -72,6 +64,12 @@ void UWidget_Layout::NativeDestruct()
         GameInstance->OnHintCollectionChanged.RemoveDynamic(this, &UWidget_Layout::HandleHintCollectionChanged);
     }
 
+    if (UTimeShiftEffortComponent* EffortComponent = ObservedEffortComponent.Get())
+    {
+        EffortComponent->OnEffortChanged.RemoveDynamic(this, &UWidget_Layout::HandleEffortChanged);
+    }
+
+    ObservedEffortComponent.Reset();
     ObservedGameInstance.Reset();
 
     Super::NativeDestruct();
@@ -90,4 +88,15 @@ void UWidget_Layout::HandleHintChanged(const FHintData& UpdatedHint)
 void UWidget_Layout::HandleHintCollectionChanged()
 {
     OnHintsRefreshed();
+}
+
+void UWidget_Layout::HandleEffortChanged(float NewEffort)
+{
+    if (!HealthBar)
+    {
+        return;
+    }
+
+    const float MaxEffort = ObservedEffortComponent.IsValid() ? ObservedEffortComponent->GetMaxEffort() : 0.0f;
+    HealthBar->UpdateEffort(NewEffort, MaxEffort);
 }

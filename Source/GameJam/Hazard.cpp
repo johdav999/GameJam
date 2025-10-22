@@ -4,7 +4,7 @@
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "HealthComponent.h"
+#include "TimeShiftEffortComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Sound/SoundBase.h"
@@ -128,14 +128,14 @@ void AHazard::ApplyContinuousDamage()
 
 void AHazard::DealDamageToActor(AActor* Target)
 {
-    if (!Target || Target == this || DamageAmount <= 0.f)
+    if (!Target || Target == this || EffortDrain <= 0.f)
     {
         return;
     }
 
-    if (UHealthComponent* Health = Target->FindComponentByClass<UHealthComponent>())
+    if (UTimeShiftEffortComponent* Effort = Target->FindComponentByClass<UTimeShiftEffortComponent>())
     {
-        Health->ApplyDamage(DamageAmount);
+        Effort->ModifyEffort(-EffortDrain);
     }
 }
 

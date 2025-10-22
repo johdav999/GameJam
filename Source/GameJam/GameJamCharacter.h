@@ -15,7 +15,7 @@ class UCameraComponent;
 class UInputAction;
 struct FInputActionValue;
 class UWorldShiftEffectsComponent;
-class UHealthComponent;
+class UTimeShiftEffortComponent;
 class UDialogAudioComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -42,9 +42,9 @@ class AGameJamCharacter : public ACharacter
         UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="World Shift", meta = (AllowPrivateAccess = "true"))
         UWorldShiftEffectsComponent* WorldShiftEffects;
 
-        /** Handles player health state and broadcasts updates */
-        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-        UHealthComponent* HealthComponent;
+        /** Tracks the effort required to sustain Chaos world shifts. */
+        UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="TimeShift", meta = (AllowPrivateAccess = "true"))
+        UTimeShiftEffortComponent* TimeShiftEffortComponent;
 
         /** Handles spatialized playback for character dialogue. */
         UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
@@ -121,7 +121,7 @@ protected:
         /** Called for interact input. */
         void Interact(const FInputActionValue& Value);
 
-        /** Applies the health penalty whenever the active world changes. */
+        /** Synchronizes local state whenever the active world changes. */
         UFUNCTION()
         void HandleWorldShifted(EWorldState NewWorld);
 
@@ -156,18 +156,13 @@ public:
         /** Returns FollowCamera subobject **/
         FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
-        /** Returns HealthComponent subobject **/
-        FORCEINLINE class UHealthComponent* GetHealthComponent() const { return HealthComponent; }
+        /** Returns TimeShiftEffortComponent subobject **/
+        FORCEINLINE class UTimeShiftEffortComponent* GetTimeShiftEffortComponent() const { return TimeShiftEffortComponent; }
 
         /** Returns DialogAudioComponent subobject **/
         FORCEINLINE class UDialogAudioComponent* GetDialogAudioComponent() const { return DialogAudioComponent; }
 
 private:
-        /** Tracks whether the initial world state notification has been received. */
-        bool bReceivedInitialWorldNotification = false;
-
-
-
         /** Tracks whether manual world shifting is currently allowed. */
         bool bManualWorldShiftEnabled = true;
 

@@ -8,7 +8,7 @@ class USphereComponent;
 class UStaticMeshComponent;
 class UWorldShiftBehaviorComponent;
 class USoundBase;
-class UHealthComponent;
+class UTimeShiftEffortComponent;
 
 UCLASS()
 class GAMEJAM_API AHealthPickup : public AActor
@@ -37,9 +37,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Audio")
     TObjectPtr<USoundBase> PickupSound;
 
-    /** Amount of health to add */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")
-    float HealthAmount = 10.f;
+    /** Amount of time-shift effort to restore */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TimeShift")
+    float EffortAmount = 10.f;
 
 private:
     /** Handle player overlap */
