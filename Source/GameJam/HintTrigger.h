@@ -6,8 +6,8 @@
 #include "HintTrigger.generated.h"
 
 class UBoxComponent;
+class UDialogAudioComponent;
 class USoundBase;
-struct FTimerHandle;
 
 UCLASS()
 class GAMEJAM_API AHintTrigger : public AActor
@@ -23,6 +23,10 @@ protected:
     /** Collision component used to detect when the player enters the trigger. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hint", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<UBoxComponent> TriggerBox;
+
+    /** Component responsible for managing dialog playback. */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Audio", meta = (AllowPrivateAccess = "true"))
+    TObjectPtr<UDialogAudioComponent> DialogAudioComponent;
 
     /** Unique identifier for the hint that should be granted when activated. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hint")
@@ -60,23 +64,9 @@ protected:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Hint")
     bool bTriggered;
 
-    /** Handle used to sequence dialog playback. */
-    FTimerHandle DialogPlaybackHandle;
-
-    /** Index of the dialog audio that is currently being processed. */
-    int32 CurrentDialogIndex;
-
     UFUNCTION()
     void HandleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-    /** Plays each dialog audio entry sequentially. */
-    void PlayNextDialogEntry();
-
-    /** Starts dialog playback from the beginning. */
-    void BeginDialogPlayback();
-
-    /** Cancels any active dialog timers. */
-    void StopDialogPlayback();
 
 public:
     /** Blueprint event fired whenever the hint trigger successfully activates. */

@@ -1,11 +1,13 @@
 #include "HintTrigger.h"
 
 #include "Components/BoxComponent.h"
+#include "DialogAudioComponent.h"
 #include "GameFramework/Character.h"
 #include "GameJamGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
-#include "TimerManager.h"
+#include "UObject/SoftObjectPath.h"
+#include "UObject/SoftObjectPtr.h"
 
 AHintTrigger::AHintTrigger()
     : bIsPersistent(false)
@@ -14,7 +16,6 @@ AHintTrigger::AHintTrigger()
     , TriggerSound(nullptr)
     , bAllowRetrigger(false)
     , bTriggered(false)
-    , CurrentDialogIndex(0)
 {
     PrimaryActorTick.bCanEverTick = false;
 
@@ -22,6 +23,9 @@ AHintTrigger::AHintTrigger()
     TriggerBox->SetCollisionProfileName(TEXT("Trigger"));
     TriggerBox->SetGenerateOverlapEvents(true);
     RootComponent = TriggerBox;
+
+    DialogAudioComponent = CreateDefaultSubobject<UDialogAudioComponent>(TEXT("DialogAudioComponent"));
+    DialogAudioComponent->SetupAttachment(RootComponent);
 
     TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AHintTrigger::HandleOverlap);
 }
@@ -33,6 +37,11 @@ void AHintTrigger::BeginPlay()
     if (!TriggerBox)
     {
         UE_LOG(LogTemp, Warning, TEXT("HintTrigger '%s' is missing a trigger box component."), *GetName());
+    }
+
+    if (!DialogAudioComponent)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("HintTrigger '%s' missing DialogAudioComponent."), *GetName());
     }
 }
 
@@ -64,8 +73,6 @@ void AHintTrigger::HandleOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
     const bool bHintAdded = GameJamGameInstance->AddHint(HintID, HintText, bIsPersistent, TemporalState, LoopToUnlock, DialogAudio);
 
-    UE_LOG(LogTemp, Log, TEXT("Hint Triggered: %s (Added: %s)"), *HintID.ToString(), bHintAdded ? TEXT("true") : TEXT("false"));
-
     if (!bHintAdded && !bAllowRetrigger)
     {
         bTriggered = true;
@@ -77,7 +84,30 @@ void AHintTrigger::HandleOverlap(UPrimitiveComponent* OverlappedComponent, AActo
         UGameplayStatics::PlaySound2D(this, TriggerSound);
     }
 
-    BeginDialogPlayback();
+    if (DialogAudioComponent && DialogAudio.Num() > 0)
+    {
+        UE_LOG(LogTemp, Log, TEXT("Hint '%s' triggered. Starting dialog playback (%d lines)."), *HintID.ToString(), DialogAudio.Num());
+
+        TArray<TSoftObjectPtr<USoundBase>> SoftLines;
+        SoftLines.Reserve(DialogAudio.Num());
+
+        for (const FString& Path : DialogAudio)
+        {
+            if (!Path.IsEmpty())
+            {
+                SoftLines.Add(TSoftObjectPtr<USoundBase>(FSoftObjectPath(Path)));
+            }
+        }
+
+        if (SoftLines.Num() > 0)
+        {
+            DialogAudioComponent->QueueDialogue(SoftLines, 0.2f);
+        }
+    }
+    else if (!DialogAudioComponent)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("HintTrigger '%s' missing DialogAudioComponent."), *GetName());
+    }
 
     OnHintTriggered();
 
@@ -89,66 +119,4 @@ void AHintTrigger::HandleOverlap(UPrimitiveComponent* OverlappedComponent, AActo
     {
         bTriggered = false;
     }
-}
-
-void AHintTrigger::BeginDialogPlayback()
-{
-    StopDialogPlayback();
-
-    if (DialogAudio.Num() == 0)
-    {
-        return;
-    }
-
-    CurrentDialogIndex = 0;
-    PlayNextDialogEntry();
-}
-
-void AHintTrigger::StopDialogPlayback()
-{
-    if (UWorld* World = GetWorld())
-    {
-        World->GetTimerManager().ClearTimer(DialogPlaybackHandle);
-    }
-}
-
-void AHintTrigger::PlayNextDialogEntry()
-{
-    if (!GetWorld())
-    {
-        return;
-    }
-
-    UWorld* World = GetWorld();
-
-    while (DialogAudio.IsValidIndex(CurrentDialogIndex))
-    {
-        const FString& AssetPath = DialogAudio[CurrentDialogIndex];
-        ++CurrentDialogIndex;
-
-        if (AssetPath.IsEmpty())
-        {
-            continue;
-        }
-
-        USoundBase* DialogSound = LoadObject<USoundBase>(nullptr, *AssetPath);
-        if (!DialogSound)
-        {
-            UE_LOG(LogTemp, Warning, TEXT("HintTrigger '%s' failed to load dialog audio '%s'."), *GetName(), *AssetPath);
-            continue;
-        }
-
-        UGameplayStatics::PlaySound2D(this, DialogSound);
-
-        const float Duration = FMath::Max(DialogSound->GetDuration(), 0.1f);
-
-        if (DialogAudio.IsValidIndex(CurrentDialogIndex))
-        {
-            World->GetTimerManager().SetTimer(DialogPlaybackHandle, this, &AHintTrigger::PlayNextDialogEntry, Duration, false);
-        }
-
-        return;
-    }
-
-    StopDialogPlayback();
 }
