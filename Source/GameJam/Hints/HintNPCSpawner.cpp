@@ -159,7 +159,7 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
 
     ActiveNPCController = AIController;
 
-    SpawnedNPC->SetActorHiddenInGame(true);
+//    SpawnedNPC->SetActorHiddenInGame(true);
     SpawnedNPC->SetActorEnableCollision(false);
 
     UE_LOG(LogTemp, Log, TEXT("Player overlapped NPC spawner, waiting 3 seconds before NPC moves..."));
