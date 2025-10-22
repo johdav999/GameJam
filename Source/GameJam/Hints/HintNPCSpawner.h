@@ -51,6 +51,9 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hint NPC")
     FTransform SpawnOffset;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hint NPC", meta = (ClampMin = "0.0"))
+    float SpawnDelay;
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Hint NPC", meta = (AllowPrivateAccess = "true"))
     bool bHasSpawned;
 
@@ -62,8 +65,13 @@ protected:
     FAIRequestID ActiveMoveRequestID;
 
     FTimerHandle ShadowWorldTimerHandle;
+    FTimerHandle MovementDelayTimerHandle;
 
     EWorldState PreviousWorldState;
 
     bool bIsWorldOverrideActive;
+    bool bIsMovementDelayActive;
+
+    UFUNCTION()
+    void BeginNPCMovement();
 };
