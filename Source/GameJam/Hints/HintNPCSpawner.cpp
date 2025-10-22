@@ -19,10 +19,12 @@ AHintNPCSpawner::AHintNPCSpawner()
     : NPCClass(nullptr)
     , bSpawnOnce(true)
     , SpawnOffset(FTransform::Identity)
+    , SpawnDelay(3.0f)
     , bHasSpawned(false)
     , ActiveMoveRequestID(FAIRequestID::InvalidRequest)
     , PreviousWorldState(EWorldState::Light)
     , bIsWorldOverrideActive(false)
+    , bIsMovementDelayActive(false)
 {
     PrimaryActorTick.bCanEverTick = false;
 
@@ -81,6 +83,11 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
         return;
     }
 
+    if (bIsMovementDelayActive)
+    {
+        return;
+    }
+
     ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(this, 0);
     if (OtherActor != PlayerCharacter)
     {
@@ -95,6 +102,8 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
 
     const FTransform BaseTransform = GetActorTransform();
 
+    FTimerManager& TimerManager = World->GetTimerManager();
+
     if (AWorldManager* WorldManager = AWorldManager::Get(World))
     {
         const EWorldState CurrentWorld = WorldManager->GetCurrentWorld();
@@ -108,7 +117,6 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
 
         WorldManager->SetWorld(EWorldState::Shadow);
 
-        FTimerManager& TimerManager = World->GetTimerManager();
         TimerManager.ClearTimer(ShadowWorldTimerHandle);
         TimerManager.SetTimer(ShadowWorldTimerHandle, this, &AHintNPCSpawner::RestoreWorldState, DreamWorldOverrideDuration, false);
     }
@@ -148,6 +156,80 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
     }
 
     ActiveNPCController = AIController;
+
+    SpawnedNPC->SetActorHiddenInGame(true);
+    SpawnedNPC->SetActorEnableCollision(false);
+
+    UE_LOG(LogTemp, Log, TEXT("Player overlapped NPC spawner, waiting 3 seconds..."));
+
+    TimerManager.ClearTimer(MovementDelayTimerHandle);
+    bIsMovementDelayActive = true;
+    TimerManager.SetTimer(MovementDelayTimerHandle, this, &AHintNPCSpawner::BeginNPCMovement, SpawnDelay, false);
+}
+
+void AHintNPCSpawner::BeginNPCMovement()
+{
+    UWorld* World = GetWorld();
+    if (!World)
+    {
+        bIsMovementDelayActive = false;
+        return;
+    }
+
+    FTimerManager& TimerManager = World->GetTimerManager();
+    TimerManager.ClearTimer(MovementDelayTimerHandle);
+    bIsMovementDelayActive = false;
+
+    if (!TargetLocation)
+    {
+        CleanupActiveNPC();
+        return;
+    }
+
+    if (!ActiveNPC.IsValid())
+    {
+        CleanupActiveNPC();
+        return;
+    }
+
+    AHintNPCCharacter* SpawnedNPC = ActiveNPC.Get();
+    if (!SpawnedNPC)
+    {
+        CleanupActiveNPC();
+        return;
+    }
+
+    if (!ActiveNPCController.IsValid())
+    {
+        AAIController* ExistingController = Cast<AAIController>(SpawnedNPC->GetController());
+        if (!ExistingController)
+        {
+            SpawnedNPC->SpawnDefaultController();
+            ExistingController = Cast<AAIController>(SpawnedNPC->GetController());
+        }
+
+        if (!ExistingController)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("HintNPCSpawner '%s' could not find or create an AI controller for spawned NPC '%s'."), *GetName(), *SpawnedNPC->GetName());
+            SpawnedNPC->Destroy();
+            CleanupActiveNPC();
+            return;
+        }
+
+        ActiveNPCController = ExistingController;
+    }
+
+    AAIController* AIController = ActiveNPCController.Get();
+    if (!AIController)
+    {
+        CleanupActiveNPC();
+        return;
+    }
+
+    SpawnedNPC->SetActorHiddenInGame(false);
+    SpawnedNPC->SetActorEnableCollision(true);
+
+    UE_LOG(LogTemp, Log, TEXT("NPC starting movement."));
 
     AIController->ReceiveMoveCompleted.RemoveAll(this);
    // AIController->ReceiveMoveCompleted.AddDynamic(this, &AHintNPCSpawner::HandleMoveCompleted);
@@ -195,6 +277,14 @@ void AHintNPCSpawner::HandleTriggerOverlap(UPrimitiveComponent* OverlappedCompon
 
 void AHintNPCSpawner::CleanupActiveNPC()
 {
+    if (UWorld* World = GetWorld())
+    {
+        FTimerManager& TimerManager = World->GetTimerManager();
+        TimerManager.ClearTimer(MovementDelayTimerHandle);
+    }
+
+    bIsMovementDelayActive = false;
+
     if (AAIController* Controller = ActiveNPCController.Get())
     {
         Controller->ReceiveMoveCompleted.RemoveAll(this);
