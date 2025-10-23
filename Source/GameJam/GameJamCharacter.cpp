@@ -206,6 +206,8 @@ void AGameJamCharacter::OnShiftPressed()
                 {
                         Manager->SetWorld(EWorldState::Chaos);
                         bChaosShiftActive = true;
+
+                        OnTimeShiftStarted();
                 }
         }
 }

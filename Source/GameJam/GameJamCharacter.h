@@ -118,6 +118,10 @@ protected:
         /** Handles returning to the Light world when the shift input is released. */
         void OnShiftReleased();
 
+        /** Event fired when a manual time shift into Chaos begins. */
+        UFUNCTION(BlueprintImplementableEvent, Category="World Shift|Input")
+        void OnTimeShiftStarted();
+
         /** Called for interact input. */
         void Interact(const FInputActionValue& Value);
 
