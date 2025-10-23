@@ -30,7 +30,7 @@ AGameJamCharacter::AGameJamCharacter()
 
 
         bUseControllerRotationPitch = false;
-        bUseControllerRotationYaw =true;
+       // bUseControllerRotationYaw =true;
         bUseControllerRotationRoll = false;
 
 
