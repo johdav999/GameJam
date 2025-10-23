@@ -227,6 +227,8 @@ void AWorldManager::ResetWorld()
     }
 
     StartGlobalTimedSolidCycle();
+
+    OnWorldReset.Broadcast();
 }
 
 void AWorldManager::ApplyWorldFeedback(EWorldState NewWorld)

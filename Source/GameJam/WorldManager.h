@@ -15,6 +15,7 @@ struct FTimerHandle;
 
 /** Enum describing the three available world states. */
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWorldReset);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWorldShifted, EWorldState, NewWorld);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimedSolidPhaseChanged, bool, bNowSolid);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTimedSolidPreWarning, bool, bWillBeSolid);
@@ -65,6 +66,10 @@ public:
     /** Broadcast when the world changes. */
     UPROPERTY(BlueprintAssignable, Category = "World Shift")
     FOnWorldShifted OnWorldShifted;
+
+    /** Broadcast when the world is reset. */
+    UPROPERTY(BlueprintAssignable, Category = "World Shift|Reset")
+    FOnWorldReset OnWorldReset;
 
     /** Broadcast when the global timed solid phase changes between solid and ghost. */
     UPROPERTY(BlueprintAssignable, Category = "World Shift|Timed Solid")
